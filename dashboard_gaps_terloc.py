@@ -9,8 +9,8 @@ warnings.filterwarnings('ignore')
 
 # Configuração da página
 st.set_page_config(
-    page_title="Trocas de Nota",
-    page_icon="📊", 
+    page_title="Troca de Notas Terloc",
+    page_icon="�", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -22,7 +22,7 @@ def carregar_dados(limite_registros=10000):
     try:
         arquivo_excel = 'PLANILHA TROCA DE NOTA TERLOC.xlsx'
         
-        st.info(f"⚡ Carregando {limite_registros:,} registros...")
+        st.info(f"Carregando {limite_registros:,} registros...")
         
         df = pd.read_excel(
             arquivo_excel, 
@@ -44,11 +44,11 @@ def carregar_dados(limite_registros=10000):
         return None
 
 def main():
-    st.title("📊 Trocas de Nota Terloc Sólidos")
+    st.title("Trocas de Nota Terloc Sólidos")
     st.markdown("### Análise de Tempos Entre Etapas do Processo")
     
     # Sidebar com filtros LIMPOS
-    st.sidebar.markdown("## 🔧 **Filtros**")
+    st.sidebar.markdown("## **Filtros**")
     
     # Volume fixo - sem opção para o usuário
     limite_registros = 50000  # Valor fixo otimizado
@@ -57,7 +57,7 @@ def main():
     with st.spinner("Carregando dados..."):
         df = carregar_dados(limite_registros)
     if df is None:
-        st.error("❌ Erro ao carregar dados")
+        st.error("Erro ao carregar dados")
         return
     
     # TÍTULO PRINCIPAL DOS FILTROS - Igual ao print
@@ -73,7 +73,7 @@ def main():
             data_max = datas_validas.max().date()
             
             # SEÇÃO EXPANSÍVEL - Períodos de Análise
-            with st.sidebar.expander("📅 Períodos de Análise", expanded=True):
+            with st.sidebar.expander("Períodos de Análise", expanded=True):
                 # Info box azul - formato dd/mm/aaaa
                 st.info(f"Período disponível na base: De {data_min.strftime('%d/%m/%Y')} até {data_max.strftime('%d/%m/%Y')}")
                 
@@ -113,7 +113,7 @@ def main():
             data_fim = data_fim_p1
     
     # SEÇÃO EXPANSÍVEL - Clientes (multiselect)
-    with st.sidebar.expander("🏢 Clientes", expanded=True):
+    with st.sidebar.expander("Clientes", expanded=True):
         st.markdown("Selecione os clientes")
         
         if 'CLIENTE' in df.columns:
@@ -133,7 +133,7 @@ def main():
                 df = df[df['CLIENTE'].isin(clientes_selecionados)]
     
     # SEÇÃO EXPANSÍVEL - Cliente de Venda (mesma estética)
-    with st.sidebar.expander("💼 Cliente de Venda", expanded=True):
+    with st.sidebar.expander("Cliente de Venda", expanded=True):
         st.markdown("Selecione os clientes de venda")
         
         if 'CLIENTE' in df.columns:  # Pode usar mesma coluna ou buscar coluna específica
@@ -156,11 +156,11 @@ def main():
     if 'data_inicio' in locals():
         periodo_str = f"Período 1 (P1): {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
         st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 30px;">📊 Visão Geral ({periodo_str})</h2>
+        <h2 style="margin-bottom: 0px; margin-top: 30px;">Visão Geral ({periodo_str})</h2>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
-        <h2 style="margin-bottom: 0px; margin-top: 30px;">📊 Visão Geral</h2>
+        <h2 style="margin-bottom: 0px; margin-top: 30px;">Visão Geral</h2>
         """, unsafe_allow_html=True)
     
     # Função para calcular tempo médio e formatar
@@ -235,62 +235,95 @@ def main():
     
     # Se não há dados suficientes, mostrar mensagem mais discreta
     if len(df) == 0:
-        st.warning("⚠️ Poucos dados no período selecionado para análise detalhada")
+        st.warning("Poucos dados no período selecionado para análise detalhada")
         return
     
-    # Layout em 2 colunas
-    col_left, col_right = st.columns([2, 1])
-    
-    with col_left:
-        st.markdown("""
-        <h3 style="margin-bottom: 0px; margin-top: 20px;">📈 Atendimentos Diários</h3>
-        """, unsafe_allow_html=True)
-        
-        # Gráfico de atendimentos por data (simplificado)
-        if 'data_convertida' in df.columns:
-            atendimentos_diarios = df.groupby(df['data_convertida'].dt.date).size().reset_index()
-            atendimentos_diarios.columns = ['Data', 'Quantidade']
-            
-            fig_diarios = px.bar(
-                atendimentos_diarios,
-                x='Data',
-                y='Quantidade',
-                title="",
-                color='Quantidade',
-                color_continuous_scale='Blues'
-            )
-            fig_diarios.update_layout(
-                showlegend=False,
-                height=300,
-                xaxis_title="Data",
-                yaxis_title="Quantidade de Atendimentos"
-            )
-            st.plotly_chart(fig_diarios, use_container_width=True)
-    
-    with col_right:
-        st.markdown("""
-        <h3 style="margin-bottom: 0px; margin-top: 20px;">👥 Top 10 Movimentação - Clientes</h3>
-        """, unsafe_allow_html=True)
-        
-        # Gráfico de top clientes
-        if 'CLIENTE' in df.columns:
-            top_clientes = df['CLIENTE'].value_counts().head(10).reset_index()
-            top_clientes.columns = ['Cliente', 'Quantidade']
-            
-            fig_clientes = px.bar(
-                top_clientes,
-                x='Quantidade',
-                y='Cliente',
-                orientation='h',
-                color='Quantidade',
-                color_continuous_scale='Blues'
-            )
-            fig_clientes.update_layout(
-                showlegend=False,
-                height=400,
-                yaxis={'categoryorder': 'total ascending'}
-            )
-            st.plotly_chart(fig_clientes, use_container_width=True)
+    # Layout empilhado: Top 10 clientes em cima, Atendimentos Diários abaixo (cada um ocupa a linha inteira)
+    # Top 10 Movimentação - Clientes (linha inteira)
+    st.markdown("""
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Top 10 Movimentação - Clientes</h3>
+    """, unsafe_allow_html=True)
+
+    # Gráfico de top clientes (full width)
+    if 'CLIENTE' in df.columns:
+        top_clientes = df['CLIENTE'].value_counts().head(10).reset_index()
+        top_clientes.columns = ['Cliente', 'Quantidade']
+
+        fig_clientes = px.bar(
+            top_clientes,
+            x='Quantidade',
+            y='Cliente',
+            orientation='h',
+            color='Quantidade',
+            color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']],
+            text='Quantidade'
+        )
+        fig_clientes.update_traces(
+            texttemplate='<b>%{text}</b>', 
+            textposition='outside',
+            textfont_size=14,
+            textfont_color='#1f4e79'
+        )
+        fig_clientes.update_layout(
+            showlegend=False,
+            height=400,
+            yaxis={
+                'categoryorder': 'total ascending',
+                'tickfont': {'size': 14, 'color': '#1f4e79'},
+                'title_font': {'size': 16, 'color': '#1f4e79'}
+            },
+            xaxis={
+                'tickfont': {'size': 14, 'color': '#1f4e79'},
+                'title_font': {'size': 16, 'color': '#1f4e79'}
+            },
+            margin=dict(l=20, r=80, t=10, b=10)
+        )
+        st.plotly_chart(fig_clientes, use_container_width=True)
+
+    st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
+
+    # Atendimentos Diários (linha inteira, abaixo)
+    st.markdown("""
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários</h3>
+    """, unsafe_allow_html=True)
+
+    # Gráfico de atendimentos por data (full width)
+    if 'data_convertida' in df.columns:
+        atendimentos_diarios = df.groupby(df['data_convertida'].dt.date).size().reset_index()
+        atendimentos_diarios.columns = ['Data', 'Quantidade']
+
+        fig_diarios = px.bar(
+            atendimentos_diarios,
+            x='Data',
+            y='Quantidade',
+            title="",
+            color='Quantidade',
+            color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']],
+            text='Quantidade'
+        )
+        fig_diarios.update_traces(
+            texttemplate='<b>%{text}</b>', 
+            textposition='outside',
+            textfont_size=14,
+            textfont_color='#1f4e79'
+        )
+        fig_diarios.update_layout(
+            showlegend=False,
+            height=420,
+            xaxis_title="Data",
+            yaxis_title="Quantidade de Atendimentos",
+            xaxis={
+                'tickfont': {'size': 14, 'color': '#1f4e79'},
+                'title_font': {'size': 16, 'color': '#1f4e79'}
+            },
+            yaxis={
+                'tickfont': {'size': 14, 'color': '#1f4e79'},
+                'title_font': {'size': 16, 'color': '#1f4e79'},
+                'range': [0, atendimentos_diarios['Quantidade'].max() * 1.15]
+            },
+            margin=dict(l=60, r=30, t=80, b=50)
+        )
+        st.plotly_chart(fig_diarios, use_container_width=True)
     
     # Separador discreto antes da linha do tempo
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
@@ -298,7 +331,7 @@ def main():
     # ETAPAS DO PROCESSO - Padrão de espaçamento 
     periodo_texto = f"{data_inicio_p1.strftime('%d/%m/%Y')} a {data_fim_p1.strftime('%d/%m/%Y')}"
     st.markdown(f"""
-    <h2 style="margin-bottom: 0px; margin-top: 20px;">⏱️ Média - Intervalos entre as Etapas - (Período (P1): {periodo_texto})</h2>
+    <h2 style="margin-bottom: 0px; margin-top: 20px;">Média - Intervalos entre as Etapas - (Período P1: {periodo_texto})</h2>
     """, unsafe_allow_html=True)
     
     # Definir etapas do processo com dados baseados no período
@@ -473,7 +506,7 @@ def main():
                     'dados': dados_validos
                 }
         except Exception as e:
-            st.warning(f"⚠️ Erro no Gap Cliente: {str(e)}")
+            st.warning(f"Erro no Gap Cliente: {str(e)}")
     
     # Gap 2: Pátio - Tempo de liberação
     if 'nota_venda' in etapas_encontradas and 'liberacao' in etapas_encontradas:
@@ -500,7 +533,7 @@ def main():
                     'dados': dados_validos
                 }
         except Exception as e:
-            st.warning(f"⚠️ Erro no Gap Pátio: {str(e)}")
+            st.warning(f"Erro no Gap Pátio: {str(e)}")
     
     # EXIBIR RESULTADOS DOS GAPS
     if gaps_calculados:
@@ -508,7 +541,7 @@ def main():
         st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
         
         st.markdown("""
-        <h2 style="margin-bottom: 0px; margin-top: 20px;">🏆 Métricas Principais - Gaps Calculados</h2>
+        <h2 style="margin-bottom: 0px; margin-top: 20px;">Métricas Principais - Gaps Calculados</h2>
         """, unsafe_allow_html=True)
         
         # Métricas em destaque
@@ -522,17 +555,14 @@ def main():
                 
                 # Sistema de cores
                 if tempo_medio > 24:
-                    cor = "🔴"
                     status = "CRÍTICO"
                 elif tempo_medio > 12:
-                    cor = "🟡"
                     status = "ALTO"
                 else:
-                    cor = "🟢"
                     status = "OK"
                 
                 st.metric(
-                    label=f"{cor} {gap_nome}",
+                    label=gap_nome,
                     value=f"{tempo_medio:.1f}h",
                     delta=f"Máx: {tempo_max:.1f}h ({status})",
                     help=f"Baseado em {registros:,} processos completos"
@@ -540,7 +570,7 @@ def main():
         
         # Gráfico comparativo
         if len(gaps_calculados) > 1:
-            st.markdown("### 📊 **Comparação de Tempos**")
+            st.markdown("### **Comparação de Tempos**")
             
             dados_grafico = []
             for gap_nome, dados in gaps_calculados.items():
@@ -556,29 +586,48 @@ def main():
                 df_grafico,
                 x='Etapa',
                 y='Tempo Médio (h)',
-                title="⏱️ Tempo Médio por Etapa do Processo",
+                title="Tempo Médio por Etapa do Processo",
                 text='Tempo Médio (h)',
                 color='Tempo Médio (h)',
-                color_continuous_scale='RdYlGn_r'
+                color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']]
             )
-            fig.update_traces(texttemplate='%{text:.1f}h', textposition='outside')
+            fig.update_traces(
+                texttemplate='<b>%{text:.1f}h</b>', 
+                textposition='outside',
+                textfont_size=14,
+                textfont_color='#1f4e79'
+            )
+            fig.update_layout(
+                title_font={'size': 18, 'color': '#1f4e79'},
+                xaxis={
+                    'tickfont': {'size': 14, 'color': '#1f4e79'},
+                    'title_font': {'size': 16, 'color': '#1f4e79'}
+                },
+                yaxis={
+                    'tickfont': {'size': 14, 'color': '#1f4e79'},
+                    'title_font': {'size': 16, 'color': '#1f4e79'},
+                    'range': [0, df_grafico['Tempo Médio (h)'].max() * 1.2]
+                },
+                height=480,
+                margin=dict(l=60, r=30, t=100, b=50)
+            )
             st.plotly_chart(fig, use_container_width=True)
         
         # Resumo executivo
-        st.markdown("### 💼 **RESUMO**")
+        st.markdown("### **RESUMO**")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("**🚨 GARGALOS IDENTIFICADOS:**")
+            st.markdown("**GARGALOS IDENTIFICADOS:**")
             for gap_nome, dados in gaps_calculados.items():
                 tempo = dados['tempo_medio']
                 if tempo > 24:
-                    st.error(f"🔴 **{gap_nome}**: {tempo:.1f}h - CRÍTICO!")
+                    st.error(f"**{gap_nome}**: {tempo:.1f}h - CRÍTICO!")
                 elif tempo > 12:
-                    st.warning(f"🟡 **{gap_nome}**: {tempo:.1f}h - ALTO")
+                    st.warning(f"**{gap_nome}**: {tempo:.1f}h - ALTO")
                 else:
-                    st.success(f"🟢 **{gap_nome}**: {tempo:.1f}h - OK")
+                    st.success(f"**{gap_nome}**: {tempo:.1f}h - OK")
         
         with col2:
             st.markdown("**📊 MÉTRICAS CHAVE:**")
@@ -709,7 +758,7 @@ def main():
             )
     
     else:
-        st.warning("⚠️ Não foi possível identificar colunas importantes para exibir")
+        st.warning("Não foi possível identificar colunas importantes para exibir")
         
         # Fallback - mostrar pelo menos algumas colunas
         st.markdown("### 📋 **Primeiras Colunas Disponíveis:**")
