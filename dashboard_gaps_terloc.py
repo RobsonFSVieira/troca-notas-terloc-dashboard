@@ -215,12 +215,12 @@ def main():
             if clientes_selecionados:
                 df = df[df['CLIENTE'].isin(clientes_selecionados)]
     
-    # SEÇÃO EXPANSÍVEL - Cliente de Venda (mesma estética)
+    # SEÇÃO EXPANSÍVEL - Cliente de Venda (destino da carga)
     with st.sidebar.expander("Cliente de Venda", expanded=True):
-        st.markdown("Selecione os clientes de venda")
+        st.markdown("Selecione os clientes de venda (destino da carga)")
         
-        if 'CLIENTE' in df.columns:  # Pode usar mesma coluna ou buscar coluna específica
-            clientes_venda_todos = sorted(df['CLIENTE'].dropna().unique())
+        if 'CLIENTE DE VENDA' in df.columns:
+            clientes_venda_todos = sorted(df['CLIENTE DE VENDA'].dropna().unique())
             
             # Multiselect para clientes de venda
             clientes_venda_selecionados = st.multiselect(
@@ -233,7 +233,9 @@ def main():
             
             # Aplicar filtro se houver seleções
             if clientes_venda_selecionados:
-                df = df[df['CLIENTE'].isin(clientes_venda_selecionados)]
+                df = df[df['CLIENTE DE VENDA'].isin(clientes_venda_selecionados)]
+        else:
+            st.warning("Coluna 'CLIENTE DE VENDA' não encontrada na planilha")
     
     # SEÇÃO EXPANSÍVEL - Normalização de Clientes (diagnóstico) - Final da sidebar
     with st.sidebar.expander("Normalização de Clientes", expanded=False):
