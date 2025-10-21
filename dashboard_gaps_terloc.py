@@ -53,11 +53,77 @@ def carregar_dados(limite_registros=10000):
         df['campos_preenchidos'] = df[colunas_tempo].notna().sum(axis=1)
         df['processo_completo'] = df['campos_preenchidos'] >= len(colunas_tempo) * 0.6  # 60% preenchido
         
+        # Normalizar nomes de clientes
+        if 'CLIENTE' in df.columns:
+            df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
+        
         return df
         
     except Exception as e:
         st.error(f"Erro ao carregar dados: {e}")
         return None
+
+def normalizar_nome_cliente(nome):
+    """
+    Normaliza nomes de clientes para resolver inconsistências de digitação
+    """
+    if pd.isna(nome) or nome == '':
+        return 'NÃO INFORMADO'
+    
+    # Converter para string e limpar
+    nome_limpo = str(nome).strip().upper()
+    
+    # Remover acentos e caracteres especiais desnecessários
+    nome_limpo = nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
+    
+    # Dicionário de normalização - mapeamento para nomes padrão
+    mapeamento_clientes = {
+        # ADUFERTIL - todas as variações
+        'ADUFERTIL': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAÍ': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAÍ/SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',
+        
+        # MOSAIC CUBATÃO - todas as variações
+        'MOSAIC': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP', 
+        'MOSAIC CUBATÃO': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATÃO/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO 0099-60/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
+        
+        # MOSAIC UBERABA - todas as variações  
+        'MOSAIC UBERABA': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA/MG': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA 0110-00/MG': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA 0110-00': 'MOSAIC UBERABA/MG',
+        
+        # ELEKEIROZ - todas as variações
+        'ELEKEIROZ': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VÁRZEA': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VÁRZEA/SP': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ / VARZEA - SP': 'ELEKEIROZ VARZEA/SP',
+        
+        # CSRD - manter como está
+        'CSRD': 'CSRD'
+    }
+    
+    # Tentar encontrar correspondência exata primeiro
+    if nome_limpo in mapeamento_clientes:
+        return mapeamento_clientes[nome_limpo]
+    
+    # Busca por similaridade (contém parte do nome)
+    for chave, valor_padrao in mapeamento_clientes.items():
+        if chave in nome_limpo or nome_limpo in chave:
+            return valor_padrao
+    
+    # Se não encontrou correspondência, retorna o nome original limpo
+    return nome_limpo
 
 def main():
     st.title("Trocas de Nota Terloc Sólidos")
@@ -127,6 +193,26 @@ def main():
             df = df_filtrado
             data_inicio = data_inicio_p1
             data_fim = data_fim_p1
+    
+    # SEÇÃO EXPANSÍVEL - Normalização de Clientes (diagnóstico)
+    with st.sidebar.expander("🔧 Normalização de Clientes", expanded=False):
+        if 'CLIENTE' in df.columns:
+            # Mostrar estatísticas de normalização
+            clientes_originais = df['CLIENTE'].value_counts()
+            clientes_unicos = len(clientes_originais)
+            
+            st.markdown(f"**Clientes únicos após normalização:** {clientes_unicos}")
+            
+            # Mostrar top 5 clientes mais frequentes
+            st.markdown("**Top 5 clientes:**")
+            for i, (cliente, count) in enumerate(clientes_originais.head(5).items(), 1):
+                st.text(f"{i}. {cliente} ({count})")
+            
+            # Botão para mostrar todos os clientes originais
+            if st.button("🔍 Ver todos os clientes"):
+                st.markdown("**Todos os clientes normalizados:**")
+                for cliente in sorted(clientes_originais.index):
+                    st.text(f"• {cliente}")
     
     # SEÇÃO EXPANSÍVEL - Clientes (multiselect)
     with st.sidebar.expander("Clientes", expanded=True):
