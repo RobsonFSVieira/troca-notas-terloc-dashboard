@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import os
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -20,7 +21,22 @@ st.set_page_config(
 def carregar_dados(limite_registros=10000):
     """Carrega dados da planilha TERLOC"""
     try:
-        arquivo_excel = 'PLANILHA TROCA DE NOTA TERLOC.xlsx'
+        # Lista de possíveis localizações do arquivo
+        possiveis_arquivos = [
+            'PLANILHA TROCA DE NOTA TERLOC.xlsx',
+            './PLANILHA TROCA DE NOTA TERLOC.xlsx',
+            'data/PLANILHA TROCA DE NOTA TERLOC.xlsx',
+            os.path.join(os.path.dirname(__file__), 'PLANILHA TROCA DE NOTA TERLOC.xlsx')
+        ]
+        
+        arquivo_excel = None
+        for arquivo in possiveis_arquivos:
+            if os.path.exists(arquivo):
+                arquivo_excel = arquivo
+                break
+        
+        if not arquivo_excel:
+            raise FileNotFoundError("Planilha 'PLANILHA TROCA DE NOTA TERLOC.xlsx' não encontrada")
         
         st.info(f"Carregando {limite_registros:,} registros...")
         
