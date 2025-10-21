@@ -130,9 +130,6 @@ def main():
     st.title("Trocas de Nota Terloc Sólidos")
     st.markdown("### Análise de Tempos Entre Etapas do Processo")
     
-    # Sidebar com filtros LIMPOS
-    st.sidebar.markdown("## **Filtros**")
-    
     # Volume fixo - sem opção para o usuário
     limite_registros = 50000  # Valor fixo otimizado
     
@@ -143,7 +140,7 @@ def main():
         st.error("Erro ao carregar dados")
         return
     
-    # TÍTULO PRINCIPAL DOS FILTROS - Igual ao print
+    # TÍTULO PRINCIPAL DOS FILTROS
     st.sidebar.markdown("# Filtros de Análise")
     
     # Calcular períodos disponíveis
