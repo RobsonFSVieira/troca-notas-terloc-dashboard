@@ -85,6 +85,7 @@ def normalizar_nome_cliente(nome):
         'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
         'ADUFERTIL JUNDIAÍ/SP': 'ADUFERTIL JUNDIAI/SP',
         'ADUFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADULFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',  # Correção de digitação
         
         # MOSAIC CUBATÃO - todas as variações
         'MOSAIC': 'MOSAIC CUBATAO/SP',
@@ -194,26 +195,6 @@ def main():
             data_inicio = data_inicio_p1
             data_fim = data_fim_p1
     
-    # SEÇÃO EXPANSÍVEL - Normalização de Clientes (diagnóstico)
-    with st.sidebar.expander("🔧 Normalização de Clientes", expanded=False):
-        if 'CLIENTE' in df.columns:
-            # Mostrar estatísticas de normalização
-            clientes_originais = df['CLIENTE'].value_counts()
-            clientes_unicos = len(clientes_originais)
-            
-            st.markdown(f"**Clientes únicos após normalização:** {clientes_unicos}")
-            
-            # Mostrar top 5 clientes mais frequentes
-            st.markdown("**Top 5 clientes:**")
-            for i, (cliente, count) in enumerate(clientes_originais.head(5).items(), 1):
-                st.text(f"{i}. {cliente} ({count})")
-            
-            # Botão para mostrar todos os clientes originais
-            if st.button("🔍 Ver todos os clientes"):
-                st.markdown("**Todos os clientes normalizados:**")
-                for cliente in sorted(clientes_originais.index):
-                    st.text(f"• {cliente}")
-    
     # SEÇÃO EXPANSÍVEL - Clientes (multiselect)
     with st.sidebar.expander("Clientes", expanded=True):
         st.markdown("Selecione os clientes")
@@ -253,6 +234,26 @@ def main():
             # Aplicar filtro se houver seleções
             if clientes_venda_selecionados:
                 df = df[df['CLIENTE'].isin(clientes_venda_selecionados)]
+    
+    # SEÇÃO EXPANSÍVEL - Normalização de Clientes (diagnóstico) - Final da sidebar
+    with st.sidebar.expander("Normalização de Clientes", expanded=False):
+        if 'CLIENTE' in df.columns:
+            # Mostrar estatísticas de normalização
+            clientes_originais = df['CLIENTE'].value_counts()
+            clientes_unicos = len(clientes_originais)
+            
+            st.markdown(f"**Clientes únicos após normalização:** {clientes_unicos}")
+            
+            # Mostrar top 5 clientes mais frequentes
+            st.markdown("**Top 5 clientes:**")
+            for i, (cliente, count) in enumerate(clientes_originais.head(5).items(), 1):
+                st.text(f"{i}. {cliente} ({count})")
+            
+            # Botão para mostrar todos os clientes originais
+            if st.button("Ver todos os clientes"):
+                st.markdown("**Todos os clientes normalizados:**")
+                for cliente in sorted(clientes_originais.index):
+                    st.text(f"• {cliente}")
     
     # MÉTRICAS PRINCIPAIS - Padrão de espaçamento
     if 'data_inicio' in locals():
@@ -732,7 +733,7 @@ def main():
                     st.success(f"**{gap_nome}**: {tempo:.1f}h - OK")
         
         with col2:
-            st.markdown("**📊 MÉTRICAS CHAVE:**")
+            st.markdown("**MÉTRICAS CHAVE:**")
             
             tempo_total = sum(dados['tempo_medio'] for dados in gaps_calculados.values())
             st.info(f"**Tempo Total Médio:** {tempo_total:.1f} horas")
@@ -750,7 +751,7 @@ def main():
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
     
     st.markdown("""
-    <h2 style="margin-bottom: 0px; margin-top: 20px;">📋 Dados da Planilha</h2>
+    <h2 style="margin-bottom: 0px; margin-top: 20px;">Dados da Planilha</h2>
     """, unsafe_allow_html=True)
     
     # Selecionar colunas mais importantes para mostrar
@@ -798,7 +799,7 @@ def main():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            mostrar_apenas_completos = st.checkbox("📋 Apenas processos completos", value=False)
+            mostrar_apenas_completos = st.checkbox("Apenas processos completos", value=False)
         
         with col2:
             linhas_exibir = st.selectbox("Linhas a exibir:", [20, 50, 100, 200], index=1)
@@ -821,7 +822,7 @@ def main():
         df_final = df_final.head(linhas_exibir)
         
         # Exibir informações da tabela
-        st.info(f"📊 Exibindo {len(df_final):,} registros de {len(df):,} totais | Colunas: {len(colunas_existentes)}")
+        st.info(f"Exibindo {len(df_final):,} registros de {len(df):,} totais | Colunas: {len(colunas_existentes)}")
         
         # Exibir a tabela
         st.dataframe(
@@ -832,7 +833,7 @@ def main():
         )
         
         # Estatísticas rápidas da tabela
-        st.markdown("### 📊 **Estatísticas Rápidas da Tabela**")
+        st.markdown("### **Estatísticas Rápidas da Tabela**")
         
         cols_stats = st.columns(len(colunas_existentes))
         
@@ -850,10 +851,10 @@ def main():
                 )
         
         # Download da tabela (opcional)
-        if st.button("📥 Preparar Download da Tabela"):
+        if st.button("Preparar Download da Tabela"):
             csv = df_final.to_csv(index=False).encode('utf-8-sig')
             st.download_button(
-                label="💾 Baixar Tabela (CSV)",
+                label="Baixar Tabela (CSV)",
                 data=csv,
                 file_name=f'terloc_dados_limpos_{datetime.now().strftime("%Y%m%d_%H%M")}.csv',
                 mime='text/csv'
@@ -863,7 +864,7 @@ def main():
         st.warning("Não foi possível identificar colunas importantes para exibir")
         
         # Fallback - mostrar pelo menos algumas colunas
-        st.markdown("### 📋 **Primeiras Colunas Disponíveis:**")
+        st.markdown("### **Primeiras Colunas Disponíveis:**")
         primeiras_colunas = df.columns[:8].tolist()
         df_fallback = df[primeiras_colunas].head(20)
         st.dataframe(df_fallback, use_container_width=True)
