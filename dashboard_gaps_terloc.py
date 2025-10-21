@@ -9,7 +9,7 @@ warnings.filterwarnings('ignore')
 
 # Configuração da página
 st.set_page_config(
-    page_title="Dashboard Gaps TERLOC",
+    page_title="Trocas de Nota",
     page_icon="📊", 
     layout="wide",
     initial_sidebar_state="expanded"
@@ -154,7 +154,7 @@ def main():
     
     # MÉTRICAS PRINCIPAIS - Padrão de espaçamento
     if 'data_inicio' in locals():
-        periodo_str = f"P1: {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
+        periodo_str = f"Período 1 (P1): {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
         st.markdown(f"""
         <h2 style="margin-bottom: 0px; margin-top: 30px;">📊 Visão Geral ({periodo_str})</h2>
         """, unsafe_allow_html=True)
@@ -298,7 +298,7 @@ def main():
     # ETAPAS DO PROCESSO - Padrão de espaçamento 
     periodo_texto = f"{data_inicio_p1.strftime('%d/%m/%Y')} a {data_fim_p1.strftime('%d/%m/%Y')}"
     st.markdown(f"""
-    <h2 style="margin-bottom: 0px; margin-top: 20px;">⏱️ Média - Intervalos entre as Etapas - ({periodo_texto})</h2>
+    <h2 style="margin-bottom: 0px; margin-top: 20px;">⏱️ Média - Intervalos entre as Etapas - (Período (P1): {periodo_texto})</h2>
     """, unsafe_allow_html=True)
     
     # Definir etapas do processo com dados baseados no período
@@ -565,7 +565,7 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
         
         # Resumo executivo
-        st.markdown("### 💼 **RESUMO PARA GERÊNCIA**")
+        st.markdown("### 💼 **RESUMO**")
         
         col1, col2 = st.columns(2)
         
@@ -599,7 +599,7 @@ def main():
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
     
     st.markdown("""
-    <h2 style="margin-bottom: 0px; margin-top: 20px;">📋 Dados da Planilha TERLOC - Versão Limpa</h2>
+    <h2 style="margin-bottom: 0px; margin-top: 20px;">📋 Dados da Planilha</h2>
     """, unsafe_allow_html=True)
     
     # Selecionar colunas mais importantes para mostrar
@@ -717,9 +717,6 @@ def main():
         df_fallback = df[primeiras_colunas].head(20)
         st.dataframe(df_fallback, use_container_width=True)
     
-    # Footer
-    st.markdown("---")
-    st.markdown("📊 **Dashboard Gaps TERLOC** - Análise Focada em Tempos Entre Etapas")
 
 if __name__ == "__main__":
     main()
