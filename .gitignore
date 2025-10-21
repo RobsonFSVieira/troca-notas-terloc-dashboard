@@ -95,4 +95,4 @@ ehthumbs.db
 Desktop.ini
 
 # Excel files (if you prefer not to include large binaries)
-*.xlsx
+# *.xlsx
