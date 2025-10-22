@@ -38,8 +38,6 @@ def carregar_dados(limite_registros=10000):
         if not arquivo_excel:
             raise FileNotFoundError("Planilha 'PLANILHA TROCA DE NOTA TERLOC.xlsx' não encontrada")
         
-        st.info(f"Carregando {limite_registros:,} registros...")
-        
         df = pd.read_excel(
             arquivo_excel, 
             sheet_name='PLANILHA ÚNICA', 
