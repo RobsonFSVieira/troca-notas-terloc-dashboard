@@ -59,6 +59,10 @@ def carregar_dados(limite_registros=10000):
         if 'CLIENTE DE VENDA' in df.columns:
             df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
         
+        # Debug: Verificar clientes únicos após normalização (remover após teste)
+        print("DEBUG - Clientes únicos após normalização:", sorted(df['CLIENTE'].unique()) if 'CLIENTE' in df.columns else [])
+        print("DEBUG - Clientes de venda únicos após normalização:", sorted(df['CLIENTE DE VENDA'].unique()) if 'CLIENTE DE VENDA' in df.columns else [])
+        
         return df
         
     except Exception as e:
@@ -67,44 +71,163 @@ def carregar_dados(limite_registros=10000):
 
 def normalizar_nome_cliente(nome):
     """
-    Normaliza nomes de clientes usando correção automática de erros típicos de digitação
+    Normaliza nomes de clientes usando inteligência artificial baseada em similaridade
+    Detecta automaticamente erros de digitação, caracteres trocados, espaços/hífens incorretos
     """
     if pd.isna(nome) or nome == '':
         return 'NÃO INFORMADO'
     
     # Converter para string e limpar
-    nome_limpo = str(nome).strip().upper()
+    nome_original = str(nome).strip()
+    nome_limpo = nome_original.upper()
     
-    # Remover acentos e caracteres especiais
+    # Remover acentos e caracteres especiais de forma mais abrangente
     nome_limpo = (nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
                             .replace('É', 'E').replace('Ê', 'E').replace('Í', 'I')
                             .replace('Ó', 'O').replace('Ô', 'O').replace('Ú', 'U')
                             .replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U'))
     
-    # CORREÇÃO AUTOMÁTICA DE ERROS DE DIGITAÇÃO
+    # PADRÕES DE REFERÊNCIA - nossos clientes "corretos"
+    padroes_referencia = {
+        'ADUFERTIL JUNDIAI/SP': ['ADUFERTIL', 'ADULFERTIL', 'JUNDIAI', 'JUNDIAI', 'SP'],
+        'MOSAIC CUBATAO/SP': ['MOSAIC', 'CUBATAO', 'CUBATAO', 'SP'],
+        'MOSAIC UBERABA/MG': ['MOSAIC', 'UBERABA', 'MG'],
+        'ELEKEIROZ VARZEA/SP': ['ELEKEIROZ', 'ELEIKEIROZ', 'ELEQUEIROZ', 'VARZEA', 'VARZEA', 'SP'],
+        'CSRD': ['CSRD']
+    }
     
-    # 1. ELEKEIROZ - Capturar TODAS as variações com erros de digitação
-    if any(variacao in nome_limpo for variacao in ['ELEKEIROZ', 'ELEIKEIROZ', 'ELEQUEIROZ', 'ELEQUEIOZ', 'ELKEIROZ']):
-        return 'ELEKEIROZ VARZEA/SP'
+    def calcular_similaridade_inteligente(texto, padrao_referencia):
+        """
+        Calcula similaridade considerando erros típicos de digitação:
+        - Letras trocadas (I<->E, Q<->K, etc.)
+        - Caracteres substituídos (-<->/, espaço<->/)
+        - Palavras-chave presentes
+        """
+        texto_processado = texto
+        
+        # Normalizar separadores comuns: - / espaço
+        texto_processado = texto_processado.replace('-', '/').replace(' ', '/')
+        
+        # Corrigir trocas comuns de letras
+        correções_comuns = {
+            'ELEIKEIROZ': 'ELEKEIROZ',
+            'ELEQUEIROZ': 'ELEKEIROZ',
+            'ELKEIROZ': 'ELEKEIROZ',
+            'ADULFERTIL': 'ADUFERTIL',
+            'VARZEA': 'VARZEA',  # Já está correto
+            'VÁRZEA': 'VARZEA'
+        }
+        
+        for erro, correcao in correções_comuns.items():
+            texto_processado = texto_processado.replace(erro, correcao)
+        
+        # Contar quantas palavras-chave do padrão estão presentes
+        palavras_encontradas = 0
+        for palavra_chave in padrao_referencia:
+            if palavra_chave in texto_processado:
+                palavras_encontradas += 1
+        
+        # Calcular score baseado na presença de palavras-chave
+        if len(padrao_referencia) > 0:
+            similaridade = palavras_encontradas / len(set(padrao_referencia))  # usar set para evitar duplicatas
+        else:
+            similaridade = 0
+            
+        return similaridade, texto_processado
     
-    # 2. ADUFERTIL - Capturar todas as variações
-    if any(variacao in nome_limpo for variacao in ['ADUFERTIL', 'ADULFERTIL', 'ADUFETIL', 'ADUFERIL']):
+    # Testar contra todos os padrões de referência
+    melhor_match = None
+    melhor_score = 0
+    melhor_texto_processado = nome_limpo
+    
+    for nome_padrao, palavras_chave in padroes_referencia.items():
+        score, texto_processado = calcular_similaridade_inteligente(nome_limpo, palavras_chave)
+        
+        if score > melhor_score and score >= 0.6:  # Limiar de 60% de similaridade
+            melhor_score = score
+            melhor_match = nome_padrao
+            melhor_texto_processado = texto_processado
+    
+    # Se encontrou uma correspondência com alta similaridade, usar ela
+    if melhor_match and melhor_score >= 0.6:
+        return melhor_match
+    
+    # FALLBACK: Lógica de padrões simples para casos não capturados
+    # ADUFERTIL - qualquer variação
+    if any(palavra in nome_limpo for palavra in ['ADUFERTIL', 'ADULFERTIL']) and ('JUNDIAI' in nome_limpo or nome_limpo in ['ADUFERTIL', 'ADULFERTIL']):
         return 'ADUFERTIL JUNDIAI/SP'
     
-    # 3. MOSAIC CUBATÃO
+    # MOSAIC CUBATÃO - qualquer variação
     if 'MOSAIC' in nome_limpo and ('CUBATAO' in nome_limpo or nome_limpo == 'MOSAIC'):
         return 'MOSAIC CUBATAO/SP'
     
-    # 4. MOSAIC UBERABA
+    # MOSAIC UBERABA - qualquer variação
     if 'MOSAIC' in nome_limpo and 'UBERABA' in nome_limpo:
         return 'MOSAIC UBERABA/MG'
     
-    # 5. CSRD
+    # ELEKEIROZ - qualquer variação (incluindo erros de digitação)
+    if any(variacao in nome_limpo for variacao in ['ELEKEIROZ', 'ELEIKEIROZ', 'ELEQUEIROZ']) and ('VARZEA' in nome_limpo or nome_limpo in ['ELEKEIROZ', 'ELEIKEIROZ', 'ELEQUEIROZ']):
+        return 'ELEKEIROZ VARZEA/SP'
+    
+    # CSRD - qualquer variação
     if 'CSRD' in nome_limpo:
         return 'CSRD'
     
-    # Se não encontrou padrão conhecido, retorna normalizado
-    return nome_limpo.replace('-', '/').replace('  ', ' ').strip()
+    # Se não encontrou nenhum padrão conhecido, retorna o nome original normalizado
+    # (remove caracteres especiais e normaliza formato)
+    nome_final = nome_limpo.replace('-', '/').replace('  ', ' ').strip()
+    return nome_final
+    mapeamento_clientes = {
+        # ADUFERTIL - todas as variações explícitas (backup)
+        'ADUFETIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNIDIAI SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADULFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',  # Correção de digitação
+        'ADULFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',   # Nova variação encontrada
+        
+        # MOSAIC CUBATÃO - todas as variações
+        'MOSAIC': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP', 
+        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO 0099-60/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
+        
+        # MOSAIC UBERABA - todas as variações  
+        'MOSAIC UBERABA': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA/MG': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA 0110-00/MG': 'MOSAIC UBERABA/MG',
+        'MOSAIC UBERABA 0110-00': 'MOSAIC UBERABA/MG',
+        
+        # ELEKEIROZ - todas as variações
+        'ELEKEIROZ': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ / VARZEA - SP': 'ELEKEIROZ VARZEA/SP',
+        
+        # CSRD - manter como está
+        'CSRD': 'CSRD'
+    }
+    
+    # Tentar encontrar correspondência exata primeiro
+    if nome_limpo in mapeamento_clientes:
+        return mapeamento_clientes[nome_limpo]
+    
+    # Busca por similaridade (contém parte do nome)
+    for chave, valor_padrao in mapeamento_clientes.items():
+        if chave in nome_limpo or nome_limpo in chave:
+            return valor_padrao
+    
+    # Se não encontrou correspondência, retorna o nome original limpo
+    return nome_limpo
 
 def normalizar_cliente_venda(nome):
     """
@@ -232,8 +355,10 @@ def main():
     # TÍTULO PRINCIPAL DOS FILTROS
     st.sidebar.markdown("# Filtros de Análise")
     
-    # Variável padrão do período (será atualizada se houver dados válidos)
-    periodo_texto = "Período não definido"
+    # Botão para limpar cache e forçar atualização dos dados
+    if st.sidebar.button("🔄 Atualizar Dados", help="Força o recarregamento dos dados da planilha com normalização atualizada"):
+        st.cache_data.clear()
+        st.rerun()
     
     # Calcular períodos disponíveis
     if 'DATA' in df.columns:
@@ -296,9 +421,6 @@ def main():
             df = df_filtrado
             data_inicio = data_inicio_p1
             data_fim = data_fim_p1
-            
-            # Definir texto do período para usar em todos os títulos
-            periodo_texto = f"{data_inicio_p1.strftime('%d/%m/%Y')} a {data_fim_p1.strftime('%d/%m/%Y')}"
             
             # VISÃO GERAL - Movida para cima, logo após o título principal
             periodo_str = f"Período 1 (P1): {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
@@ -368,35 +490,15 @@ def main():
                 for cliente in sorted(clientes_originais.index):
                     st.text(f"• {cliente}")
     
-    # Botão para limpar cache e forçar atualização dos dados (movido para o final)
-    st.sidebar.markdown("---")  # Separador visual
-    if st.sidebar.button("🔄 Atualizar Dados", help="Força o recarregamento dos dados da planilha com normalização atualizada"):
-        st.cache_data.clear()
-        st.rerun()
-    
     # MÉTRICAS PRINCIPAIS - Padrão de espaçamento
     
     # Função para calcular tempo médio e formatar
     def calcular_e_formatar_tempo(df, col_data, col_hora1, col_hora2):
-        """Calcula tempo médio entre duas etapas e formata como h:mm:ss - IGNORA linhas vazias"""
+        """Calcula tempo médio entre duas etapas e formata como h:mm:ss"""
         try:
             if col_data in df.columns and col_hora1 in df.columns and col_hora2 in df.columns:
-                # Criar datetime apenas para linhas onde AMBAS as colunas têm dados
-                mask_dados_validos = (
-                    df[col_hora1].notna() & 
-                    (df[col_hora1] != '') & 
-                    df[col_hora2].notna() & 
-                    (df[col_hora2] != '')
-                )
-                
-                if mask_dados_validos.sum() == 0:
-                    return "0:00:00"
-                
-                # Filtrar apenas linhas com dados completos
-                df_valido = df[mask_dados_validos].copy()
-                
-                datetime1 = pd.to_datetime(df_valido[col_data].astype(str) + ' ' + df_valido[col_hora1].astype(str), errors='coerce')
-                datetime2 = pd.to_datetime(df_valido[col_data].astype(str) + ' ' + df_valido[col_hora2].astype(str), errors='coerce')
+                datetime1 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora1].astype(str), errors='coerce')
+                datetime2 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora2].astype(str), errors='coerce')
                 
                 diferenca = (datetime2 - datetime1).dt.total_seconds()  # em segundos
                 diferenca_valida = diferenca[diferenca.notna() & (diferenca >= 0) & (diferenca < 24*3600)]
@@ -407,17 +509,9 @@ def main():
                     minutos = int((media_segundos % 3600) // 60)
                     segundos = int(media_segundos % 60)
                     return f"{horas}:{minutos:02d}:{segundos:02d}"
-                    
             return "0:00:00"
-        except Exception as e:
-            print(f"Erro no cálculo {col_hora1} → {col_hora2}: {e}")
+        except:
             return "0:00:00"
-    
-    # Verificar se existe a coluna crítica para o cálculo
-    if 'HORA RECEBIMENTO NF DE VENDA' not in df.columns:
-        colunas_nf_venda = [col for col in df.columns if 'NF' in col.upper() and 'VENDA' in col.upper()]
-        if not colunas_nf_venda:
-            st.warning("⚠️ **Aviso**: A coluna 'HORA RECEBIMENTO NF DE VENDA' não foi encontrada neste período. O campo 'Espera pela Nota de Venda' será exibido como 0:00:00.")
     
     # Calcular tempos médios reais
     tempo_ticket_senha = calcular_e_formatar_tempo(df, 'DATA  TICKET', 'HORA TICKET', 'HORARIO SENHA ')
@@ -432,38 +526,40 @@ def main():
     
     with col1:
         st.metric(
-            "📊 Total de Processos",
+            "Total de Atendimentos",
             f"{total_atendimentos:,}",
-            help="Quantidade total de processos de troca de nota no período selecionado. Cada processo representa uma operação completa desde a entrada até a liberação."
+            help="Total de registros no período selecionado"
         )
-
+    
     with col2:
         st.metric(
-            "🎫 Tempo: Entrada → Senha",
+            "Tempo Médio - Intervalo Ticket e Senha",
             tempo_ticket_senha,
-            help="⏱️ ENTRADA ATÉ RETIRADA DA SENHA\n\nTempo médio que o motorista leva desde a chegada no pátio (entrada com ticket) até retirar a senha para iniciar o processo de troca de nota."
+            help="Tempo médio entre ENTRADA (TICKET) e HORA SENHA"
         )
-
+    
     with col3:
         st.metric(
-            "⏳ Tempo: Senha → Portaria", 
+            "Tempo Médio de Espera", 
             tempo_senha_gate,
-            help="🚪 RETIRADA DA SENHA ATÉ CHEGADA NA PORTARIA\n\nTempo médio entre retirar a senha e chegar na portaria (gate) para apresentar os documentos e iniciar a troca propriamente dita."
+            help="Tempo médio entre HORA SENHA e HORA GATE"
         )
-
+    
     with col4:
         st.metric(
-            "📋 Tempo: Portaria → Nota",
+            "Espera pela Nota de Venda",
             tempo_gate_nf,
-            help="📄 PORTARIA ATÉ RECEBIMENTO DA NOVA NOTA\n\nTempo médio que leva para processar a troca na portaria e receber a nova nota fiscal de venda. Esta é uma das etapas mais críticas do processo."
+            help="Tempo médio entre HORA GATE e HORA NF VENDA"
         )
-
+    
     with col5:
         st.metric(
-            "✅ Tempo: Nota → Liberação",
+            "Tempo para Liberação",
             tempo_nf_liberacao,
-            help="🚛 NOTA FISCAL ATÉ LIBERAÇÃO FINAL\n\nTempo médio entre receber a nova nota fiscal e ser liberado para sair do pátio com a carga autorizada."
-        )    # Separador discreto e espaçamento
+            help="Tempo médio entre HORA NF VENDA e HORA LIBERAÇÃO"
+        )
+    
+    # Separador discreto e espaçamento
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
     
     # Se não há dados suficientes, mostrar mensagem mais discreta
@@ -473,8 +569,8 @@ def main():
     
     # Layout empilhado: Top 10 clientes em cima, Atendimentos Diários abaixo (cada um ocupa a linha inteira)
     # Top 10 Movimentação - Clientes (linha inteira)
-    st.markdown(f"""
-    <h3 style="margin-bottom: 0px; margin-top: 20px;">Top 10 Movimentação - Clientes - (Período P1: {periodo_texto})</h3>
+    st.markdown("""
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Top 10 Movimentação - Clientes</h3>
     """, unsafe_allow_html=True)
 
     # Gráfico de top clientes (full width)
@@ -516,8 +612,8 @@ def main():
     st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
     # Atendimentos Diários (linha inteira, abaixo)
-    st.markdown(f"""
-    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - (Período P1: {periodo_texto})</h3>
+    st.markdown("""
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários</h3>
     """, unsafe_allow_html=True)
 
     # Gráfico de atendimentos por data (full width)
@@ -564,6 +660,7 @@ def main():
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
     
     # ETAPAS DO PROCESSO - Padrão de espaçamento 
+    periodo_texto = f"{data_inicio_p1.strftime('%d/%m/%Y')} a {data_fim_p1.strftime('%d/%m/%Y')}"
     st.markdown(f"""
     <h2 style="margin-bottom: 0px; margin-top: 20px;">Média - Intervalos entre as Etapas - (Período P1: {periodo_texto})</h2>
     """, unsafe_allow_html=True)
@@ -774,12 +871,8 @@ def main():
         # Separador discreto
         st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
         
-        st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Etapas Mais Demoradas - (Período P1: {periodo_texto})</h2>
-        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-        Estas métricas mostram onde estão os maiores atrasos no processo de troca de nota. 
-        Focam apenas nas etapas que realmente acontecem (ignora etapas sem dados).
-        </p>
+        st.markdown("""
+        <h2 style="margin-bottom: 0px; margin-top: 20px;">Métricas Principais - Gaps Calculados</h2>
         """, unsafe_allow_html=True)
         
         # Métricas em destaque
@@ -799,22 +892,16 @@ def main():
                 else:
                     status = "OK"
                 
-                # Criar texto de ajuda mais didático
-                if "Cliente" in gap_nome:
-                    help_text = f"🎯 GARGALO NO PROCESSO COM O CLIENTE\n\nTempo médio para o cliente processar e enviar a nota fiscal de venda.\n\n📊 Baseado em {registros:,} processos que completaram esta etapa\n⏱️ Tempo máximo registrado: {tempo_max:.1f}h\n\n💡 Valores altos indicam demora do cliente em emitir/enviar a NF."
-                else:
-                    help_text = f"🎯 GARGALO NO PÁTIO/LIBERAÇÃO\n\nTempo médio para liberar o veículo após receber a nota fiscal.\n\n📊 Baseado em {registros:,} processos que completaram esta etapa\n⏱️ Tempo máximo registrado: {tempo_max:.1f}h\n\n💡 Valores altos indicam demora na liberação interna do pátio."
-                
                 st.metric(
-                    label=gap_nome.replace("Gap Cliente (Envio NF Venda)", "🏢 Demora do Cliente").replace("Gap Pátio (Liberação)", "🚛 Demora na Liberação"),
+                    label=gap_nome,
                     value=f"{tempo_medio:.1f}h",
                     delta=f"Máx: {tempo_max:.1f}h ({status})",
-                    help=help_text
+                    help=f"Baseado em {registros:,} processos completos"
                 )
         
         # Gráfico comparativo
         if len(gaps_calculados) > 1:
-            st.markdown(f"### **Comparação de Tempos - (Período P1: {periodo_texto})**")
+            st.markdown("### **Comparação de Tempos**")
             
             dados_grafico = []
             for gap_nome, dados in gaps_calculados.items():
@@ -858,7 +945,7 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
         
         # Resumo executivo
-        st.markdown(f"### **RESUMO - (Período P1: {periodo_texto})**")
+        st.markdown("### **RESUMO**")
         
         col1, col2 = st.columns(2)
         
@@ -974,45 +1061,21 @@ def main():
         )
         
         # Estatísticas rápidas da tabela
-        st.markdown(f"### **📋 Qualidade dos Dados - (Período P1: {periodo_texto})**")
-        st.markdown("*Percentual de preenchimento por campo - Use para cobrar qualidade no dia a dia*")
+        st.markdown("### **Estatísticas Rápidas da Tabela**")
         
-        # Filtrar colunas removendo DATA e adicionando coluna de Total no início
-        colunas_filtradas = [col for col in colunas_existentes if 'DATA' not in col.upper()]
+        cols_stats = st.columns(len(colunas_existentes))
         
-        # Criar lista final com Total de Processos no início
-        cols_stats = st.columns(len(colunas_filtradas) + 1)
-        
-        # Primeira coluna: Total de Processos
-        with cols_stats[0]:
-            total_registros = len(df)
-            st.metric(
-                label="TOTAL PROCESSOS",
-                value=f"{total_registros:,}",
-                delta="100% base",
-                help=f"📊 TOTAL DE PROCESSOS NO PERÍODO\n\n📋 Total de linhas/processos: {total_registros:,}\n📅 Período: {periodo_texto}\n\n💡 Esta é a base para calcular todos os percentuais de preenchimento dos outros campos."
-            )
-        
-        # Demais colunas: Qualidade de preenchimento
-        for idx, col in enumerate(colunas_filtradas):
-            with cols_stats[idx + 1]:
+        for idx, col in enumerate(colunas_existentes):
+            with cols_stats[idx]:
+                valores_unicos = df[col].nunique()
                 valores_preenchidos = df[col].notna().sum()
-                percentual_preenchimento = (valores_preenchidos / total_registros) * 100
-                celulas_vazias = total_registros - valores_preenchidos
-                
-                # Determinar status da qualidade
-                if percentual_preenchimento >= 95:
-                    status_cor = "🟢 ÓTIMO"
-                elif percentual_preenchimento >= 80:
-                    status_cor = "🟡 MÉDIO"
-                else:
-                    status_cor = "🔴 RUIM"
+                percentual_preenchimento = (valores_preenchidos / len(df)) * 100
                 
                 st.metric(
-                    label=col.replace('HORA', 'H.'),
-                    value=f"{percentual_preenchimento:.1f}%",
-                    delta=f"{valores_preenchidos:,} de {total_registros:,}",
-                    help=f"📊 QUALIDADE DE PREENCHIMENTO\n\n✅ Campos preenchidos: {valores_preenchidos:,}\n❌ Campos vazios: {celulas_vazias:,}\n📈 Qualidade: {status_cor}\n\n💡 Use para cobrar o preenchimento correto das planilhas no dia a dia!\n\n🎯 Meta recomendada: >95% preenchimento"
+                    label=col.replace('HORA', 'H.').replace('DATA', 'DT'),
+                    value=f"{valores_unicos:,}",
+                    delta=f"{percentual_preenchimento:.0f}% preench.",
+                    help=f"Valores únicos: {valores_unicos:,}\nPreenchimento: {percentual_preenchimento:.1f}%"
                 )
         
         # Download da tabela (opcional)
