@@ -55,6 +55,10 @@ def carregar_dados(limite_registros=10000):
         if 'CLIENTE' in df.columns:
             df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
         
+        # Normalizar também a coluna CLIENTE DE VENDA
+        if 'CLIENTE DE VENDA' in df.columns:
+            df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_nome_cliente)
+        
         return df
         
     except Exception as e:
