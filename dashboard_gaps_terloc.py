@@ -512,7 +512,7 @@ def main():
             xaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
                 'title_font': {'size': 16, 'color': '#1f4e79'},
-                'tickformat': '%d',  # Mostrar apenas o dia
+                'tickformat': '%d %b',  # Dia e mês abreviado (ex: "1 Out")
                 'dtick': 'D1'  # Um tick por dia
             },
             yaxis={
