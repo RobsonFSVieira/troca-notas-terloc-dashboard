@@ -51,13 +51,11 @@ def carregar_dados(limite_registros=10000):
         df['campos_preenchidos'] = df[colunas_tempo].notna().sum(axis=1)
         df['processo_completo'] = df['campos_preenchidos'] >= len(colunas_tempo) * 0.6  # 60% preenchido
         
-        # Normalizar nomes de clientes
+        # Normalizar nomes de clientes (apenas CLIENTE - origem)
         if 'CLIENTE' in df.columns:
             df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
         
-        # Normalizar também a coluna CLIENTE DE VENDA
-        if 'CLIENTE DE VENDA' in df.columns:
-            df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_nome_cliente)
+        # CLIENTE DE VENDA mantém nomes originais (são entidades diferentes)
         
         return df
         
