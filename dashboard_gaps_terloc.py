@@ -432,37 +432,37 @@ def main():
     
     with col1:
         st.metric(
-            "📊 Total de Processos",
+            "Total de Processos",
             f"{total_atendimentos:,}",
             help="Quantidade total de processos de troca de nota no período selecionado. Cada processo representa uma operação completa desde a entrada até a liberação."
         )
 
     with col2:
         st.metric(
-            "🎫 Tempo: Entrada → Senha",
+            "Tempo: Entrada → Senha",
             tempo_ticket_senha,
-            help="⏱️ ENTRADA ATÉ RETIRADA DA SENHA\n\nTempo médio que o motorista leva desde a chegada no pátio (entrada com ticket) até retirar a senha para iniciar o processo de troca de nota."
+            help="ENTRADA ATÉ RETIRADA DA SENHA\n\nTempo médio que o motorista leva desde a chegada no pátio (entrada com ticket) até retirar a senha para iniciar o processo de troca de nota."
         )
 
     with col3:
         st.metric(
-            "⏳ Tempo: Senha → Portaria", 
+            "Tempo: Senha → Portaria", 
             tempo_senha_gate,
-            help="🚪 RETIRADA DA SENHA ATÉ CHEGADA NA PORTARIA\n\nTempo médio entre retirar a senha e chegar na portaria (gate) para apresentar os documentos e iniciar a troca propriamente dita."
+            help="RETIRADA DA SENHA ATÉ CHEGADA NA PORTARIA\n\nTempo médio entre retirar a senha e chegar na portaria (gate) para apresentar os documentos e iniciar a troca propriamente dita."
         )
 
     with col4:
         st.metric(
-            "📋 Tempo: Portaria → Nota",
+            "Tempo: Portaria → Nota",
             tempo_gate_nf,
-            help="📄 PORTARIA ATÉ RECEBIMENTO DA NOVA NOTA\n\nTempo médio que leva para processar a troca na portaria e receber a nova nota fiscal de venda. Esta é uma das etapas mais críticas do processo."
+            help="PORTARIA ATÉ RECEBIMENTO DA NOVA NOTA\n\nTempo médio que leva para processar a troca na portaria e receber a nova nota fiscal de venda. Esta é uma das etapas mais críticas do processo."
         )
 
     with col5:
         st.metric(
-            "✅ Tempo: Nota → Liberação",
+            "Tempo: Nota → Liberação",
             tempo_nf_liberacao,
-            help="🚛 NOTA FISCAL ATÉ LIBERAÇÃO FINAL\n\nTempo médio entre receber a nova nota fiscal e ser liberado para sair do pátio com a carga autorizada."
+            help="NOTA FISCAL ATÉ LIBERAÇÃO FINAL\n\nTempo médio entre receber a nova nota fiscal e ser liberado para sair do pátio com a carga autorizada."
         )    # Separador discreto e espaçamento
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
     
@@ -489,62 +489,143 @@ def main():
             orientation='h',
             color='Quantidade',
             color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']],
-            text='Quantidade'
+            text='Quantidade',
+            title="<b>Ranking de Clientes por Volume</b>"
         )
+        
+        # Calcular margem direita baseada no valor máximo
+        max_quantidade_clientes = top_clientes['Quantidade'].max()
+        x_range_max = max_quantidade_clientes * 1.15  # 15% de margem
+        
         fig_clientes.update_traces(
             texttemplate='<b>%{text}</b>', 
             textposition='outside',
             textfont_size=14,
-            textfont_color='#1f4e79'
+            textfont_color='black'
         )
         fig_clientes.update_layout(
             showlegend=False,
-            height=400,
+            height=450,
+            title_font={'size': 18, 'color': '#1f4e79'},
             yaxis={
                 'categoryorder': 'total ascending',
-                'tickfont': {'size': 14, 'color': '#1f4e79'},
-                'title_font': {'size': 16, 'color': '#1f4e79'}
+                'tickfont': {'size': 12, 'color': '#1f4e79'},
+                'title_font': {'size': 16, 'color': '#1f4e79'},
+                'title': '<b>Cliente</b>'
             },
             xaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
-                'title_font': {'size': 16, 'color': '#1f4e79'}
+                'title_font': {'size': 16, 'color': '#1f4e79'},
+                'title': '<b>Quantidade de Processos</b>',
+                'range': [0, x_range_max]
             },
-            margin=dict(l=20, r=80, t=10, b=10)
+            margin=dict(l=150, r=100, t=60, b=60)
         )
         st.plotly_chart(fig_clientes, use_container_width=True)
 
     st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
-    # Atendimentos Diários (linha inteira, abaixo)
+    # Atendimentos Diários - Comparação P1 vs P2
+    periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
     st.markdown(f"""
-    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - (Período P1: {periodo_texto})</h3>
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - Comparação P1 vs P2</h3>
+    <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+    <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
+    </p>
     """, unsafe_allow_html=True)
 
     # Gráfico de atendimentos por data (full width)
     if 'data_convertida' in df.columns:
-        atendimentos_diarios = df.groupby(df['data_convertida'].dt.date).size().reset_index()
-        atendimentos_diarios.columns = ['Data', 'Quantidade']
+        # Calcular métricas para P1
+        atendimentos_diarios_p1 = df.groupby(df['data_convertida'].dt.date).size().reset_index()
+        atendimentos_diarios_p1.columns = ['Data', 'Quantidade']
+        
+        media_diaria_p1 = atendimentos_diarios_p1['Quantidade'].mean()
+        dias_acima_media_p1 = (atendimentos_diarios_p1['Quantidade'] > media_diaria_p1).sum()
+        dias_abaixo_media_p1 = (atendimentos_diarios_p1['Quantidade'] < media_diaria_p1).sum()
+        total_dias_p1 = len(atendimentos_diarios_p1)
+        max_dia_p1 = atendimentos_diarios_p1.loc[atendimentos_diarios_p1['Quantidade'].idxmax()]
+        vale_dia_p1 = atendimentos_diarios_p1.loc[atendimentos_diarios_p1['Quantidade'].idxmin()]
+        
+        # Calcular métricas para P2
+        atendimentos_diarios_p2 = df_p2.groupby(df_p2['data_convertida'].dt.date).size().reset_index()
+        atendimentos_diarios_p2.columns = ['Data', 'Quantidade']
+        
+        if len(atendimentos_diarios_p2) > 0:
+            media_diaria_p2 = atendimentos_diarios_p2['Quantidade'].mean()
+            dias_acima_media_p2 = (atendimentos_diarios_p2['Quantidade'] > media_diaria_p2).sum()
+            dias_abaixo_media_p2 = (atendimentos_diarios_p2['Quantidade'] < media_diaria_p2).sum()
+            total_dias_p2 = len(atendimentos_diarios_p2)
+            max_dia_p2 = atendimentos_diarios_p2.loc[atendimentos_diarios_p2['Quantidade'].idxmax()]
+            vale_dia_p2 = atendimentos_diarios_p2.loc[atendimentos_diarios_p2['Quantidade'].idxmin()]
+            
+            # Calcular diferenças (P2 - P1)
+            diff_media = media_diaria_p2 - media_diaria_p1
+            diff_dias_acima = ((dias_acima_media_p2/total_dias_p2)*100) - ((dias_acima_media_p1/total_dias_p1)*100)
+            diff_dias_abaixo = ((dias_abaixo_media_p2/total_dias_p2)*100) - ((dias_abaixo_media_p1/total_dias_p1)*100)
+            diff_pico = max_dia_p2['Quantidade'] - max_dia_p1['Quantidade']
+            diff_vale = vale_dia_p2['Quantidade'] - vale_dia_p1['Quantidade']
+        else:
+            # Valores padrão se P2 não tem dados
+            media_diaria_p2 = 0
+            dias_acima_media_p2 = 0
+            dias_abaixo_media_p2 = 0
+            total_dias_p2 = 0
+            max_dia_p2 = {'Quantidade': 0}
+            vale_dia_p2 = {'Quantidade': 0}
+            diff_media = diff_dias_acima = diff_dias_abaixo = diff_pico = diff_vale = 0
+        
+        # Informações contextuais antes do gráfico
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Média Diária", f"{media_diaria_p1:.1f}", delta=f"{diff_media:+.1f}", delta_color="inverse", help="Média de processos por dia no período P1 vs P2")
+        with col2:
+            st.metric("Dias Acima da Média", f"{dias_acima_media_p1}", delta=f"{diff_dias_acima:+.1f}%", delta_color="inverse", help="Dias com volume superior à média P1 vs P2")
+        with col3:
+            st.metric("Dias Abaixo da Média", f"{dias_abaixo_media_p1}", delta=f"{diff_dias_abaixo:+.1f}%", delta_color="inverse", help="Dias com volume inferior à média P1 vs P2")
+        with col4:
+            st.metric("Pico Máximo", f"{max_dia_p1['Quantidade']}", delta=f"{diff_pico:+.0f}", delta_color="inverse", help="Maior volume registrado em um dia P1 vs P2")
+        with col5:
+            st.metric("VALE", f"{vale_dia_p1['Quantidade']}", delta=f"{diff_vale:+.0f}", delta_color="inverse", help="Menor volume registrado em um dia P1 vs P2")
 
         fig_diarios = px.bar(
-            atendimentos_diarios,
+            atendimentos_diarios_p1,
             x='Data',
             y='Quantidade',
-            title="",
+            title="<b>Distribuição de Atendimentos por Data (P1)</b>",
             color='Quantidade',
             color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']],
             text='Quantidade'
         )
+        
+        # Adicionar linha da média diária
+        fig_diarios.add_hline(
+            y=media_diaria_p1,
+            line_dash="dash",
+            line_color="red",
+            line_width=3,
+            annotation_text=f"<b>Média P1: {media_diaria_p1:.1f}</b>",
+            annotation_position="top right",
+            annotation_font_size=14,
+            annotation_font_color="red"
+        )
+        
+        # Calcular margem superior para não cortar os valores
+        max_quantidade = atendimentos_diarios_p1['Quantidade'].max()
+        y_range_max = max_quantidade * 1.2  # 20% de margem superior
+        
         fig_diarios.update_traces(
             texttemplate='<b>%{text}</b>', 
             textposition='outside',
             textfont_size=14,
-            textfont_color='#1f4e79'
+            textfont_color='black'
         )
         fig_diarios.update_layout(
             showlegend=False,
-            height=420,
-            xaxis_title="Data",
-            yaxis_title="Quantidade de Atendimentos",
+            height=500,
+            title_font={'size': 20, 'color': '#1f4e79'},
+            xaxis_title="<b>Data</b>",
+            yaxis_title="<b>Quantidade de Atendimentos</b>",
             xaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
                 'title_font': {'size': 16, 'color': '#1f4e79'},
@@ -554,9 +635,9 @@ def main():
             yaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
                 'title_font': {'size': 16, 'color': '#1f4e79'},
-                'range': [0, atendimentos_diarios['Quantidade'].max() * 1.15]
+                'range': [0, y_range_max]
             },
-            margin=dict(l=60, r=30, t=80, b=50)
+            margin=dict(l=80, r=40, t=100, b=80)
         )
         st.plotly_chart(fig_diarios, use_container_width=True)
     
@@ -644,7 +725,7 @@ def main():
         justify-content: center;
         margin: 0 auto 8px;
         font-weight: bold;
-        font-size: 18px;
+        font-size: 22px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -666,7 +747,7 @@ def main():
             st.markdown(f"""
             <div class="etapa-box">
                 <div class="etapa-circulo">{etapa['num']}</div>
-                <div style="font-weight: bold; font-size: 12px; color: #333; text-align: center;">
+                <div style="font-weight: bold; font-size: 14px; color: #333; text-align: center;">
                     {etapa['nome']}
                 </div>
             </div>
@@ -677,8 +758,8 @@ def main():
         with colunas_setas[i]:
             st.markdown(f"""
             <div style="text-align: center; margin-top: 15px;">
-                <div style="color: #28a745; font-size: 20px;">→</div>
-                <div style="color: #28a745; font-weight: bold; font-size: 12px; margin-top: 2px;">
+                <div style="color: #28a745; font-size: 24px;">→</div>
+                <div style="color: #28a745; font-weight: bold; font-size: 14px; margin-top: 2px;">
                     {etapas_info[i]['intervalo']}
                 </div>
             </div>
@@ -709,153 +790,313 @@ def main():
                 etapas_encontradas[etapa_id] = {'coluna': col, 'nome': nome_etapa}
                 break
     
-    # Calcular gaps
-    gaps_calculados = {}
+    # Função para calcular gaps de um período específico
+    def calcular_gaps_periodo(df_periodo, nome_periodo):
+        gaps = {}
+        
+        # Gap 1: Cliente - Tempo para enviar NF
+        if 'entrada_patio' in etapas_encontradas and 'nota_venda' in etapas_encontradas:
+            try:
+                col_ticket = etapas_encontradas['entrada_patio']['coluna']
+                col_nf = etapas_encontradas['nota_venda']['coluna']
+                
+                # Converter para datetime
+                base_date = pd.Timestamp('2024-01-01')
+                
+                dt_ticket = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df_periodo[col_ticket].astype(str), errors='coerce')
+                dt_nf = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df_periodo[col_nf].astype(str), errors='coerce')
+                
+                # Calcular diferença
+                diferenca = (dt_nf - dt_ticket).dt.total_seconds() / 3600
+                diferenca = diferenca.where(diferenca >= 0, diferenca + 24)  # Ajustar para horários que cruzam meia-noite
+                
+                dados_validos = diferenca.dropna()
+                
+                if len(dados_validos) > 0:
+                    gaps[f'Gap Cliente (Envio NF Venda) - {nome_periodo}'] = {
+                        'tempo_medio': dados_validos.mean(),
+                        'tempo_maximo': dados_validos.max(),
+                        'tempo_minimo': dados_validos.min(),
+                        'registros': len(dados_validos),
+                        'dados': dados_validos,
+                        'periodo': nome_periodo
+                    }
+            except Exception as e:
+                st.warning(f"Erro no Gap Cliente {nome_periodo}: {str(e)}")
+        
+        # Gap 2: Pátio - Tempo de liberação
+        if 'nota_venda' in etapas_encontradas and 'liberacao' in etapas_encontradas:
+            try:
+                col_nf = etapas_encontradas['nota_venda']['coluna']
+                col_liberacao = etapas_encontradas['liberacao']['coluna']
+                
+                base_date = pd.Timestamp('2024-01-01')
+                
+                dt_nf = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df_periodo[col_nf].astype(str), errors='coerce')
+                dt_liberacao = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df_periodo[col_liberacao].astype(str), errors='coerce')
+                
+                diferenca = (dt_liberacao - dt_nf).dt.total_seconds() / 3600
+                diferenca = diferenca.where(diferenca >= 0, diferenca + 24)
+                
+                dados_validos = diferenca.dropna()
+                
+                if len(dados_validos) > 0:
+                    gaps[f'Gap Pátio (Liberação) - {nome_periodo}'] = {
+                        'tempo_medio': dados_validos.mean(),
+                        'tempo_maximo': dados_validos.max(),
+                        'tempo_minimo': dados_validos.min(),
+                        'registros': len(dados_validos),
+                        'dados': dados_validos,
+                        'periodo': nome_periodo
+                    }
+            except Exception as e:
+                st.warning(f"Erro no Gap Pátio {nome_periodo}: {str(e)}")
+        
+        return gaps
     
-    # Calcular gaps usando as etapas encontradas
-    # Gap 1: Cliente - Tempo para enviar NF
-    if 'entrada_patio' in etapas_encontradas and 'nota_venda' in etapas_encontradas:
-        try:
-            col_ticket = etapas_encontradas['entrada_patio']['coluna']
-            col_nf = etapas_encontradas['nota_venda']['coluna']
-            
-            # Converter para datetime
-            base_date = pd.Timestamp('2024-01-01')
-            
-            dt_ticket = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df[col_ticket].astype(str), errors='coerce')
-            dt_nf = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df[col_nf].astype(str), errors='coerce')
-            
-            # Calcular diferença
-            diferenca = (dt_nf - dt_ticket).dt.total_seconds() / 3600
-            diferenca = diferenca.where(diferenca >= 0, diferenca + 24)  # Ajustar para horários que cruzam meia-noite
-            
-            dados_validos = diferenca.dropna()
-            
-            if len(dados_validos) > 0:
-                gaps_calculados['Gap Cliente (Envio NF Venda)'] = {
-                    'tempo_medio': dados_validos.mean(),
-                    'tempo_maximo': dados_validos.max(),
-                    'tempo_minimo': dados_validos.min(),
-                    'registros': len(dados_validos),
-                    'dados': dados_validos
-                }
-        except Exception as e:
-            st.warning(f"Erro no Gap Cliente: {str(e)}")
+    # Calcular gaps para P1 e P2
+    gaps_p1 = calcular_gaps_periodo(df, 'P1')
+    gaps_p2 = calcular_gaps_periodo(df_p2, 'P2')
     
-    # Gap 2: Pátio - Tempo de liberação
-    if 'nota_venda' in etapas_encontradas and 'liberacao' in etapas_encontradas:
-        try:
-            col_nf = etapas_encontradas['nota_venda']['coluna']
-            col_liberacao = etapas_encontradas['liberacao']['coluna']
-            
-            base_date = pd.Timestamp('2024-01-01')
-            
-            dt_nf = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df[col_nf].astype(str), errors='coerce')
-            dt_liberacao = pd.to_datetime(base_date.strftime('%Y-%m-%d') + ' ' + df[col_liberacao].astype(str), errors='coerce')
-            
-            diferenca = (dt_liberacao - dt_nf).dt.total_seconds() / 3600
-            diferenca = diferenca.where(diferenca >= 0, diferenca + 24)
-            
-            dados_validos = diferenca.dropna()
-            
-            if len(dados_validos) > 0:
-                gaps_calculados['Gap Pátio (Liberação)'] = {
-                    'tempo_medio': dados_validos.mean(),
-                    'tempo_maximo': dados_validos.max(), 
-                    'tempo_minimo': dados_validos.min(),
-                    'registros': len(dados_validos),
-                    'dados': dados_validos
-                }
-        except Exception as e:
-            st.warning(f"Erro no Gap Pátio: {str(e)}")
-    
-    # EXIBIR RESULTADOS DOS GAPS
+    # Combinar todos os gaps calculados
+    gaps_calculados = {**gaps_p1, **gaps_p2}    # EXIBIR RESULTADOS DOS GAPS
     if gaps_calculados:
         # Separador discreto
         st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
         
+        periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
+        
         st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Etapas Mais Demoradas - (Período P1: {periodo_texto})</h2>
-        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
-        Estas métricas mostram onde estão os maiores atrasos no processo de troca de nota. 
-        Focam apenas nas etapas que realmente acontecem (ignora etapas sem dados).
+        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Comparação P1 vs P2</h2>
+        <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+        <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
+        </p>
+        <p style="margin-bottom: 15px; color: #666; font-size: 12px;">
+        Compare a evolução da performance entre os dois períodos selecionados.
         </p>
         """, unsafe_allow_html=True)
         
-        # Métricas em destaque
-        cols = st.columns(len(gaps_calculados))
-        
-        for idx, (gap_nome, dados) in enumerate(gaps_calculados.items()):
-            with cols[idx]:
-                tempo_medio = dados['tempo_medio']
-                tempo_max = dados['tempo_maximo']
-                registros = dados['registros']
-                
-                # Sistema de cores
-                if tempo_medio > 24:
-                    status = "CRÍTICO"
-                elif tempo_medio > 12:
-                    status = "ALTO"
-                else:
-                    status = "OK"
-                
-                # Criar texto de ajuda mais didático
-                if "Cliente" in gap_nome:
-                    help_text = f"🎯 GARGALO NO PROCESSO COM O CLIENTE\n\nTempo médio para o cliente processar e enviar a nota fiscal de venda.\n\n📊 Baseado em {registros:,} processos que completaram esta etapa\n⏱️ Tempo máximo registrado: {tempo_max:.1f}h\n\n💡 Valores altos indicam demora do cliente em emitir/enviar a NF."
-                else:
-                    help_text = f"🎯 GARGALO NO PÁTIO/LIBERAÇÃO\n\nTempo médio para liberar o veículo após receber a nota fiscal.\n\n📊 Baseado em {registros:,} processos que completaram esta etapa\n⏱️ Tempo máximo registrado: {tempo_max:.1f}h\n\n💡 Valores altos indicam demora na liberação interna do pátio."
-                
-                st.metric(
-                    label=gap_nome.replace("Gap Cliente (Envio NF Venda)", "🏢 Demora do Cliente").replace("Gap Pátio (Liberação)", "🚛 Demora na Liberação"),
-                    value=f"{tempo_medio:.1f}h",
-                    delta=f"Máx: {tempo_max:.1f}h ({status})",
-                    help=help_text
-                )
-        
-        # Gráfico comparativo
-        if len(gaps_calculados) > 1:
-            st.markdown(f"### **Comparação de Tempos - (Período P1: {periodo_texto})**")
+        # Organizar gaps por tipo para comparação
+        gaps_por_tipo = {}
+        for gap_nome, dados in gaps_calculados.items():
+            if "Cliente" in gap_nome:
+                tipo = "Cliente"
+            elif "Pátio" in gap_nome:
+                tipo = "Pátio" 
+            else:
+                tipo = "Outros"
             
+            periodo = dados.get('periodo', 'P1')
+            
+            if tipo not in gaps_por_tipo:
+                gaps_por_tipo[tipo] = {}
+            
+            gaps_por_tipo[tipo][periodo] = dados
+        
+        # Exibir métricas comparativas
+        if gaps_por_tipo:
+            for tipo, periodos in gaps_por_tipo.items():
+                st.markdown(f"#### **{tipo} - Envio NF Venda**" if tipo == "Cliente" else f"#### **{tipo} - Liberação**")
+                
+                cols = st.columns(3)  # P1, P2, Comparação
+                
+                # P1
+                if 'P1' in periodos:
+                    dados_p1 = periodos['P1']
+                    tempo_p1 = dados_p1['tempo_medio']
+                    registros_p1 = dados_p1['registros']
+                    
+                    with cols[0]:
+                        status_p1 = "CRÍTICO" if tempo_p1 > 24 else "ALTO" if tempo_p1 > 12 else "OK"
+                        st.metric(
+                            label="P1",
+                            value=f"{tempo_p1:.1f}h",
+                            delta=f"{registros_p1} processos",
+                            help=f"Período 1: {periodo_texto}\nStatus: {status_p1}\nTempo máximo: {dados_p1['tempo_maximo']:.1f}h"
+                        )
+                
+                # P2
+                if 'P2' in periodos:
+                    dados_p2 = periodos['P2']
+                    tempo_p2 = dados_p2['tempo_medio']
+                    registros_p2 = dados_p2['registros']
+                    
+                    with cols[1]:
+                        status_p2 = "CRÍTICO" if tempo_p2 > 24 else "ALTO" if tempo_p2 > 12 else "OK"
+                        st.metric(
+                            label="� P2",
+                            value=f"{tempo_p2:.1f}h",
+                            delta=f"{registros_p2} processos",
+                            help=f"Período 2: {periodo_p2_texto}\nStatus: {status_p2}\nTempo máximo: {dados_p2['tempo_maximo']:.1f}h"
+                        )
+                
+                # Comparação
+                if 'P1' in periodos and 'P2' in periodos:
+                    diferenca = dados_p2['tempo_medio'] - dados_p1['tempo_medio']
+                    percentual = (diferenca / dados_p1['tempo_medio']) * 100
+                    
+                    with cols[2]:
+                        tendencia = "Piora" if diferenca > 0 else "Melhora" if diferenca < 0 else "Estável"
+                        
+                        # Definir cor do delta: vermelho para piora, verde para melhora, normal para estável
+                        if diferenca > 0.1:  # Piora significativa
+                            delta_color = "inverse"  # Vermelho
+                        elif diferenca < -0.1:  # Melhora significativa 
+                            delta_color = "normal"   # Verde
+                        else:  # Estável
+                            delta_color = "off"      # Cinza
+                        
+                        st.metric(
+                            label="Evolução P2 vs P1",
+                            value=f"{diferenca:+.1f}h",
+                            delta=f"{percentual:+.0f}% ({tendencia})",
+                            delta_color=delta_color,
+                            help=f"Variação P2 vs P1\n\nP1: {dados_p1['tempo_medio']:.1f}h\nP2: {dados_p2['tempo_medio']:.1f}h\nDiferença: {diferenca:+.1f}h ({percentual:+.0f}%)\n\nInterpretação:\n+ = P2 mais lento que P1 (piora)\n- = P2 mais rápido que P1 (melhora)\n≈ = Sem mudança significativa"
+                        )
+                
+                st.markdown("---")  # Separador entre tipos
+        
+        # Gráfico comparativo P1 vs P2
+        if gaps_por_tipo:
+            st.markdown(f"""
+            ### **Gráfico Comparativo: P1 vs P2**
+            <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+            <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
+            </p>
+            """, unsafe_allow_html=True)
+            
+            # Preparar dados para o gráfico
             dados_grafico = []
-            for gap_nome, dados in gaps_calculados.items():
-                dados_grafico.append({
-                    'Etapa': gap_nome.replace('Gap ', ''),
-                    'Tempo Médio (h)': dados['tempo_medio'],
-                    'Registros': dados['registros']
-                })
+            for tipo, periodos in gaps_por_tipo.items():
+                etapa_nome = "Cliente (Envio NF Venda)" if tipo == "Cliente" else "Pátio (Liberação)"
+                
+                if 'P1' in periodos:
+                    dados_grafico.append({
+                        'Etapa': etapa_nome,
+                        'Período': 'P1',
+                        'Tempo Médio (h)': periodos['P1']['tempo_medio'],
+                        'Registros': periodos['P1']['registros']
+                    })
+                
+                if 'P2' in periodos:
+                    dados_grafico.append({
+                        'Etapa': etapa_nome,
+                        'Período': 'P2', 
+                        'Tempo Médio (h)': periodos['P2']['tempo_medio'],
+                        'Registros': periodos['P2']['registros']
+                    })
             
-            df_grafico = pd.DataFrame(dados_grafico)
-            
-            fig = px.bar(
-                df_grafico,
-                x='Etapa',
-                y='Tempo Médio (h)',
-                title="Tempo Médio por Etapa do Processo",
-                text='Tempo Médio (h)',
-                color='Tempo Médio (h)',
-                color_continuous_scale=[[0, '#1f4e79'], [0.5, '#2e5f8a'], [1, '#4682b4']]
-            )
-            fig.update_traces(
-                texttemplate='<b>%{text:.1f}h</b>', 
-                textposition='outside',
-                textfont_size=14,
-                textfont_color='#1f4e79'
-            )
-            fig.update_layout(
-                title_font={'size': 18, 'color': '#1f4e79'},
-                xaxis={
-                    'tickfont': {'size': 14, 'color': '#1f4e79'},
-                    'title_font': {'size': 16, 'color': '#1f4e79'}
-                },
-                yaxis={
-                    'tickfont': {'size': 14, 'color': '#1f4e79'},
-                    'title_font': {'size': 16, 'color': '#1f4e79'},
-                    'range': [0, df_grafico['Tempo Médio (h)'].max() * 1.2]
-                },
-                height=480,
-                margin=dict(l=60, r=30, t=100, b=50)
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            if dados_grafico:
+                df_grafico = pd.DataFrame(dados_grafico)
+                
+                # Métricas de resumo antes do gráfico
+                col_comp1, col_comp2, col_comp3 = st.columns(3)
+                
+                # Calcular médias por período
+                tempo_p1 = df_grafico[df_grafico['Período'] == 'P1']['Tempo Médio (h)'].mean() if 'P1' in df_grafico['Período'].values else 0
+                tempo_p2 = df_grafico[df_grafico['Período'] == 'P2']['Tempo Médio (h)'].mean() if 'P2' in df_grafico['Período'].values else 0
+                
+                with col_comp1:
+                    st.metric("P1 - Tempo Médio", f"{tempo_p1:.1f}h", help=f"Média geral do período P1: {periodo_texto}")
+                with col_comp2:
+                    st.metric("P2 - Tempo Médio", f"{tempo_p2:.1f}h", help=f"Média geral do período P2: {periodo_p2_texto}")
+                with col_comp3:
+                    if tempo_p1 > 0 and tempo_p2 > 0:
+                        evolucao = tempo_p2 - tempo_p1
+                        percentual_evo = (evolucao / tempo_p1) * 100
+                        tendencia = "↑" if evolucao > 0 else "↓" if evolucao < 0 else "→"
+                        
+                        # Definir cor do delta: vermelho para piora, verde para melhora
+                        if evolucao > 0.1:  # Piora significativa
+                            delta_color_geral = "inverse"  # Vermelho
+                        elif evolucao < -0.1:  # Melhora significativa
+                            delta_color_geral = "normal"   # Verde  
+                        else:  # Estável
+                            delta_color_geral = "off"      # Cinza
+                        
+                        st.metric("Evolução Geral", f"{evolucao:+.1f}h", delta=f"{percentual_evo:+.0f}% {tendencia}", delta_color=delta_color_geral)
+                
+                # Gráfico de barras agrupadas
+                fig = px.bar(
+                    df_grafico,
+                    x='Etapa',
+                    y='Tempo Médio (h)',
+                    color='Período',
+                    title="<b>Comparação P1 vs P2 por Etapa</b>",
+                    text='Tempo Médio (h)',
+                    color_discrete_map={'P1': '#1f4e79', 'P2': '#e74c3c'},  # Azul para P1, vermelho para P2
+                    barmode='group'
+                )
+                
+                fig.update_traces(
+                    texttemplate='<b>%{text:.1f}h</b>', 
+                    textposition='outside',
+                    textfont_size=14,
+                    textfont_color='black'
+                )
+                
+                # Calcular margem superior baseada no valor máximo para evitar corte
+                max_value = df_grafico['Tempo Médio (h)'].max()
+                y_range_max = max_value * 1.25  # 25% de margem superior
+                
+                fig.update_layout(
+                    height=500,
+                    title_font={'size': 20, 'color': '#1f4e79'},
+                    xaxis_title="<b>Etapa do Processo</b>",
+                    yaxis_title="<b>Tempo Médio (horas)</b>",
+                    xaxis={
+                        'tickfont': {'size': 14, 'color': '#1f4e79'},
+                        'title_font': {'size': 16, 'color': '#1f4e79'}
+                    },
+                    yaxis={
+                        'tickfont': {'size': 14, 'color': '#1f4e79'},
+                        'title_font': {'size': 16, 'color': '#1f4e79'},
+                        'range': [0, y_range_max]
+                    },
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1,
+                        font={'size': 14}
+                    ),
+                    margin=dict(l=80, r=40, t=120, b=100)
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Tabela de comparação detalhada
+                st.markdown("#### **Detalhamento da Comparação**")
+                comparacao_detalhada = []
+                
+                for tipo, periodos in gaps_por_tipo.items():
+                    etapa = "Cliente (Envio NF)" if tipo == "Cliente" else "Pátio (Liberação)"
+                    
+                    p1_tempo = periodos.get('P1', {}).get('tempo_medio', 0)
+                    p2_tempo = periodos.get('P2', {}).get('tempo_medio', 0)
+                    p1_registros = periodos.get('P1', {}).get('registros', 0)
+                    p2_registros = periodos.get('P2', {}).get('registros', 0)
+                    
+                    if p1_tempo > 0 and p2_tempo > 0:
+                        diferenca = p2_tempo - p1_tempo
+                        percentual = (diferenca / p1_tempo) * 100
+                        resultado = "Melhorou" if diferenca < -0.5 else "Piorou" if diferenca > 0.5 else "Estável"
+                        
+                        comparacao_detalhada.append({
+                            'Etapa': etapa,
+                            'P1 (h)': f"{p1_tempo:.1f}",
+                            'P2 (h)': f"{p2_tempo:.1f}",
+                            'Diferença (h)': f"{diferenca:+.1f}",
+                            'Variação (%)': f"{percentual:+.0f}%",
+                            'Resultado': resultado,
+                            'Processos P1': p1_registros,
+                            'Processos P2': p2_registros
+                        })
+                
+                if comparacao_detalhada:
+                    df_comparacao = pd.DataFrame(comparacao_detalhada)
+                    st.dataframe(df_comparacao, use_container_width=True)
         
         # Resumo executivo
         st.markdown(f"### **RESUMO - (Período P1: {periodo_texto})**")
@@ -885,6 +1126,8 @@ def main():
             if len(gaps_calculados) > 1:
                 menor_tempo = min(gaps_calculados.items(), key=lambda x: x[1]['tempo_medio'])
                 st.success(f"**Processo Mais Eficiente:** {menor_tempo[0]} ({menor_tempo[1]['tempo_medio']:.1f}h)")
+        
+
     
     
     # TABELA LIMPA DOS DADOS - VERSÃO SIMPLIFICADA DA PLANILHA
@@ -974,7 +1217,7 @@ def main():
         )
         
         # Estatísticas rápidas da tabela
-        st.markdown(f"### **📋 Qualidade dos Dados - (Período P1: {periodo_texto})**")
+        st.markdown(f"### **Qualidade dos Dados - (Período P1: {periodo_texto})**")
         st.markdown("*Percentual de preenchimento por campo - Use para cobrar qualidade no dia a dia*")
         
         # Filtrar colunas removendo DATA e adicionando coluna de Total no início
@@ -1002,17 +1245,17 @@ def main():
                 
                 # Determinar status da qualidade
                 if percentual_preenchimento >= 95:
-                    status_cor = "🟢 ÓTIMO"
+                    status_cor = "ÓTIMO"
                 elif percentual_preenchimento >= 80:
-                    status_cor = "🟡 MÉDIO"
+                    status_cor = "MÉDIO"
                 else:
-                    status_cor = "🔴 RUIM"
+                    status_cor = "RUIM"
                 
                 st.metric(
                     label=col.replace('HORA', 'H.'),
                     value=f"{percentual_preenchimento:.1f}%",
                     delta=f"{valores_preenchidos:,} de {total_registros:,}",
-                    help=f"📊 QUALIDADE DE PREENCHIMENTO\n\n✅ Campos preenchidos: {valores_preenchidos:,}\n❌ Campos vazios: {celulas_vazias:,}\n📈 Qualidade: {status_cor}\n\n💡 Use para cobrar o preenchimento correto das planilhas no dia a dia!\n\n🎯 Meta recomendada: >95% preenchimento"
+                    help=f"QUALIDADE DE PREENCHIMENTO\n\nCampos preenchidos: {valores_preenchidos:,}\nCampos vazios: {celulas_vazias:,}\nQualidade: {status_cor}\n\nUse para cobrar o preenchimento correto das planilhas no dia a dia!\n\nMeta recomendada: >95% preenchimento"
                 )
         
         # Download da tabela (opcional)
