@@ -59,10 +59,6 @@ def carregar_dados(limite_registros=10000):
         if 'CLIENTE DE VENDA' in df.columns:
             df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
         
-        # Debug: Verificar clientes únicos após normalização (remover após teste)
-        print("DEBUG - Clientes únicos após normalização:", sorted(df['CLIENTE'].unique()) if 'CLIENTE' in df.columns else [])
-        print("DEBUG - Clientes de venda únicos após normalização:", sorted(df['CLIENTE DE VENDA'].unique()) if 'CLIENTE DE VENDA' in df.columns else [])
-        
         return df
         
     except Exception as e:
