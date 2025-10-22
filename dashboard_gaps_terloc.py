@@ -55,7 +55,9 @@ def carregar_dados(limite_registros=10000):
         if 'CLIENTE' in df.columns:
             df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
         
-        # CLIENTE DE VENDA mantém nomes originais (são entidades diferentes)
+        # Normalizar CLIENTE DE VENDA com regras específicas para destinos
+        if 'CLIENTE DE VENDA' in df.columns:
+            df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
         
         return df
         
@@ -120,6 +122,106 @@ def normalizar_nome_cliente(nome):
     
     # Busca por similaridade (contém parte do nome)
     for chave, valor_padrao in mapeamento_clientes.items():
+        if chave in nome_limpo or nome_limpo in chave:
+            return valor_padrao
+    
+    # Se não encontrou correspondência, retorna o nome original limpo
+    return nome_limpo
+
+def normalizar_cliente_venda(nome):
+    """
+    Normaliza nomes de clientes de venda (destino da carga) para resolver inconsistências
+    """
+    if pd.isna(nome) or nome == '':
+        return 'NÃO INFORMADO'
+    
+    # Converter para string e limpar
+    nome_limpo = str(nome).strip().upper()
+    
+    # Remover acentos e caracteres especiais desnecessários
+    nome_limpo = nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C').replace('É', 'E').replace('Ê', 'E')
+    
+    # Dicionário de normalização para CLIENTES DE VENDA
+    mapeamento_clientes_venda = {
+        # ADUBOS ARAG.ANAPOLIS/GO
+        'ADUBOS ANAPOLIS': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG.ANAPOLIS/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG. ANAPOLIS /GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG. ANAPOLIS/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG. CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG. CATALÃO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAG - CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        'ADUBOS ARAGUAIA CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        
+        # ADUFERTIL ALFENAS/MG
+        'ADUFERTIL ALFENAS': 'ADUFERTIL ALFENAS/MG',
+        'ADUFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS/MG',
+        'ADULFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS/MG',
+        
+        # COFCO - SEBASTIANOPOLIS/SP
+        'COFCO - SEBASTIANOPOLIS': 'COFCO - SEBASTIANOPOLIS/SP',
+        'COFCO - SEBASTIANOPOLIS/SP': 'COFCO - SEBASTIANOPOLIS/SP',
+        'COFCO SEBASTIANOPOLIS': 'COFCO - SEBASTIANOPOLIS/SP',
+        
+        # FASS - NOVA INDEPENDENCIA/SP
+        'FASS - NOVA INDEPENDENCIA': 'FASS - NOVA INDEPENDENCIA/SP',
+        'FASS - NOVA INDEPENDENCIA/SP': 'FASS - NOVA INDEPENDENCIA/SP',
+        'FASS NOVA INDEPENDENCIA': 'FASS - NOVA INDEPENDENCIA/SP',
+        'FASS NOVA INDEPENDENCIA/SP': 'FASS - NOVA INDEPENDENCIA/SP',
+        
+        # FASS - SERTAOZINHO/SP
+        'FASS - SERTAOZINHO': 'FASS - SERTAOZINHO/SP',
+        'FASS - SERTAOZINHO/SP': 'FASS - SERTAOZINHO/SP',
+        'FASS - SERTÃOZINHO/SP': 'FASS - SERTAOZINHO/SP',
+        'FASS SERTAOZINHO': 'FASS - SERTAOZINHO/SP',
+        
+        # ICL JACAREI/SP
+        'ICL JACAREI': 'ICL JACAREI/SP',
+        'ICL JACAREI/SP': 'ICL JACAREI/SP',
+        'ICL JACAREI/SP - 0008/99': 'ICL JACAREI/SP',
+        'ICL JACAREI/SP - 0013/56': 'ICL JACAREI/SP',
+        
+        # LOYDER - OLIMPIA/SP
+        'LOYDER - OLIMPIA/SP': 'LOYDER - OLIMPIA/SP',
+        'LOYDER OLIMPIA': 'LOYDER - OLIMPIA/SP',
+        'LOYDER OLIMPIA/SP': 'LOYDER - OLIMPIA/SP',
+        
+        # SAFRA ALFENAS/MG
+        'SAFRA': 'SAFRA ALFENAS/MG',
+        'SAFRA ALFENAS': 'SAFRA ALFENAS/MG',
+        'SAFRA ALFENAS/MG': 'SAFRA ALFENAS/MG',
+        'SAFRA IND ALFENAS': 'SAFRA ALFENAS/MG',
+        'SAFRA IND. ALFENAS': 'SAFRA ALFENAS/MG',
+        'SAFRA IND. FERLT/ALFENAS': 'SAFRA ALFENAS/MG',
+        'SAFRA IND. FERTL ALFENAS/MG': 'SAFRA ALFENAS/MG',
+        'SAFRA IND. FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
+        'SAFRA IND.FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
+        
+        # USINA SÃO MANOEL /SP
+        'USINA SÃO MANOEL /SP': 'USINA SÃO MANOEL/SP',
+        'USINA SÃO MANOEL/SP': 'USINA SÃO MANOEL/SP',
+        'USINA SAO MANUEL/SP': 'USINA SÃO MANOEL/SP',
+        'USINA SÃO MANUEL/SP': 'USINA SÃO MANOEL/SP',
+        
+        # Nomes corretos que já estão padronizados
+        'BONFINOPOLIS/MG': 'BONFINOPOLIS/MG',
+        'CAFE BRASIL/MG': 'CAFE BRASIL/MG',
+        'COFCO - CATANDUVA/SP': 'COFCO - CATANDUVA/SP',
+        'COFCO - MERIDIANO/SP': 'COFCO - MERIDIANO/SP',
+        'COFCO - POTIRENDABA/SP': 'COFCO - POTIRENDABA/SP',
+        'FERTIBOM/CATANDUVA': 'FERTIBOM/CATANDUVA',
+        'ICL UBERLANDIA/MG': 'ICL UBERLANDIA/MG',
+        'KALIUM': 'KALIUM',
+        'TERA FERTILIZANTES/MG': 'TERA FERTILIZANTES/MG',
+        'USINA SANTA ADELIA S/A': 'USINA SANTA ADELIA S/A'
+    }
+    
+    # Tentar encontrar correspondência exata primeiro
+    if nome_limpo in mapeamento_clientes_venda:
+        return mapeamento_clientes_venda[nome_limpo]
+    
+    # Busca por similaridade (contém parte do nome)
+    for chave, valor_padrao in mapeamento_clientes_venda.items():
         if chave in nome_limpo or nome_limpo in chave:
             return valor_padrao
     
