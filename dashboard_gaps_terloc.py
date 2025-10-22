@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -262,15 +262,15 @@ def main():
                                                label_visibility="collapsed", format="DD/MM/YYYY",
                                                min_value=data_min, max_value=data_max)
                 
-                # P2 em linha (lado a lado) - formato dd/mm/aaaa
+                #P2 em linha (lado a lado) - formato dd/mm/aaaa
                 col3, col4 = st.columns(2)
                 with col3:
-                    st.markdown("**Início P2**")
+                    st.markdown("**InícioP2**")
                     data_inicio_p2 = st.date_input("", value=data_min, key="inicio_p2", 
                                                   label_visibility="collapsed", format="DD/MM/YYYY",
                                                   min_value=data_min, max_value=data_max)
                 with col4:
-                    st.markdown("**Fim P2**") 
+                    st.markdown("**FimP2**") 
                     data_fim_p2 = st.date_input("", value=data_max, key="fim_p2", 
                                                label_visibility="collapsed", format="DD/MM/YYYY",
                                                min_value=data_min, max_value=data_max)
@@ -288,7 +288,7 @@ def main():
             mask_periodo_p1 = (df['data_convertida'].dt.date >= data_inicio_p1) & (df['data_convertida'].dt.date <= data_fim_p1)
             df_filtrado = df[mask_periodo_p1].copy()
             
-            # Criar dataset P2 para comparações (quando necessário)
+            # Criar datasetP2 para comparações (quando necessário)
             mask_periodo_p2 = (df['data_convertida'].dt.date >= data_inicio_p2) & (df['data_convertida'].dt.date <= data_fim_p2)
             df_p2 = df[mask_periodo_p2].copy()
             
@@ -525,10 +525,10 @@ def main():
 
     st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
-    # Atendimentos Diários - Comparação P1 vs P2
+    # Atendimentos Diários - Comparação P1 vsP2
     periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
     st.markdown(f"""
-    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - Comparação P1 vs P2</h3>
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - Comparação P1 vsP2</h3>
     <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
     <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
     </p>
@@ -547,7 +547,7 @@ def main():
         max_dia_p1 = atendimentos_diarios_p1.loc[atendimentos_diarios_p1['Quantidade'].idxmax()]
         vale_dia_p1 = atendimentos_diarios_p1.loc[atendimentos_diarios_p1['Quantidade'].idxmin()]
         
-        # Calcular métricas para P2
+        # Calcular métricas paraP2
         atendimentos_diarios_p2 = df_p2.groupby(df_p2['data_convertida'].dt.date).size().reset_index()
         atendimentos_diarios_p2.columns = ['Data', 'Quantidade']
         
@@ -566,7 +566,7 @@ def main():
             diff_pico = max_dia_p2['Quantidade'] - max_dia_p1['Quantidade']
             diff_vale = vale_dia_p2['Quantidade'] - vale_dia_p1['Quantidade']
         else:
-            # Valores padrão se P2 não tem dados
+            # Valores padrão seP2 não tem dados
             media_diaria_p2 = 0
             dias_acima_media_p2 = 0
             dias_abaixo_media_p2 = 0
@@ -578,15 +578,15 @@ def main():
         # Informações contextuais antes do gráfico
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("Média Diária", f"{media_diaria_p1:.1f}", delta=f"{diff_media:+.1f}", delta_color="inverse", help="Média de processos por dia no período P1 vs P2")
+            st.metric("Média Diária", f"{media_diaria_p1:.1f}", delta=f"{diff_media:+.1f}", delta_color="inverse", help="Média de processos por dia no período P1 vsP2")
         with col2:
-            st.metric("Dias Acima da Média", f"{dias_acima_media_p1}", delta=f"{diff_dias_acima:+.1f}%", delta_color="inverse", help="Dias com volume superior à média P1 vs P2")
+            st.metric("Dias Acima da Média", f"{dias_acima_media_p1}", delta=f"{diff_dias_acima:+.1f}%", delta_color="inverse", help="Dias com volume superior à média P1 vsP2")
         with col3:
-            st.metric("Dias Abaixo da Média", f"{dias_abaixo_media_p1}", delta=f"{diff_dias_abaixo:+.1f}%", delta_color="inverse", help="Dias com volume inferior à média P1 vs P2")
+            st.metric("Dias Abaixo da Média", f"{dias_abaixo_media_p1}", delta=f"{diff_dias_abaixo:+.1f}%", delta_color="inverse", help="Dias com volume inferior à média P1 vsP2")
         with col4:
-            st.metric("Pico Máximo", f"{max_dia_p1['Quantidade']}", delta=f"{diff_pico:+.0f}", delta_color="inverse", help="Maior volume registrado em um dia P1 vs P2")
+            st.metric("Pico Máximo", f"{max_dia_p1['Quantidade']}", delta=f"{diff_pico:+.0f}", delta_color="inverse", help="Maior volume registrado em um dia P1 vsP2")
         with col5:
-            st.metric("VALE", f"{vale_dia_p1['Quantidade']}", delta=f"{diff_vale:+.0f}", delta_color="inverse", help="Menor volume registrado em um dia P1 vs P2")
+            st.metric("VALE", f"{vale_dia_p1['Quantidade']}", delta=f"{diff_vale:+.0f}", delta_color="inverse", help="Menor volume registrado em um dia P1 vsP2")
 
         fig_diarios = px.bar(
             atendimentos_diarios_p1,
@@ -854,7 +854,7 @@ def main():
         
         return gaps
     
-    # Calcular gaps para P1 e P2
+    # Calcular gaps para P1 eP2
     gaps_p1 = calcular_gaps_periodo(df, 'P1')
     gaps_p2 = calcular_gaps_periodo(df_p2, 'P2')
     
@@ -867,7 +867,7 @@ def main():
         periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
         
         st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Comparação P1 vs P2</h2>
+        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Comparação P1 vsP2</h2>
         <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
         <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
         </p>
@@ -898,7 +898,7 @@ def main():
             for tipo, periodos in gaps_por_tipo.items():
                 st.markdown(f"#### **{tipo} - Envio NF Venda**" if tipo == "Cliente" else f"#### **{tipo} - Liberação**")
                 
-                cols = st.columns(3)  # P1, P2, Comparação
+                cols = st.columns(3)  # P1,P2, Comparação
                 
                 # P1
                 if 'P1' in periodos:
@@ -915,7 +915,7 @@ def main():
                             help=f"Período 1: {periodo_texto}\nStatus: {status_p1}\nTempo máximo: {dados_p1['tempo_maximo']:.1f}h"
                         )
                 
-                # P2
+                #P2
                 if 'P2' in periodos:
                     dados_p2 = periodos['P2']
                     tempo_p2 = dados_p2['tempo_medio']
@@ -924,7 +924,7 @@ def main():
                     with cols[1]:
                         status_p2 = "CRÍTICO" if tempo_p2 > 24 else "ALTO" if tempo_p2 > 12 else "OK"
                         st.metric(
-                            label="� P2",
+                            label="P2",
                             value=f"{tempo_p2:.1f}h",
                             delta=f"{registros_p2} processos",
                             help=f"Período 2: {periodo_p2_texto}\nStatus: {status_p2}\nTempo máximo: {dados_p2['tempo_maximo']:.1f}h"
@@ -947,19 +947,19 @@ def main():
                             delta_color = "off"      # Cinza
                         
                         st.metric(
-                            label="Evolução P2 vs P1",
+                            label="EvoluçãoP2 vs P1",
                             value=f"{diferenca:+.1f}h",
                             delta=f"{percentual:+.0f}% ({tendencia})",
                             delta_color=delta_color,
-                            help=f"Variação P2 vs P1\n\nP1: {dados_p1['tempo_medio']:.1f}h\nP2: {dados_p2['tempo_medio']:.1f}h\nDiferença: {diferenca:+.1f}h ({percentual:+.0f}%)\n\nInterpretação:\n+ = P2 mais lento que P1 (piora)\n- = P2 mais rápido que P1 (melhora)\n≈ = Sem mudança significativa"
+                            help=f"VariaçãoP2 vs P1\n\nP1: {dados_p1['tempo_medio']:.1f}h\nP2: {dados_p2['tempo_medio']:.1f}h\nDiferença: {diferenca:+.1f}h ({percentual:+.0f}%)\n\nInterpretação:\n+ =P2 mais lento que P1 (piora)\n- =P2 mais rápido que P1 (melhora)\n≈ = Sem mudança significativa"
                         )
                 
                 st.markdown("---")  # Separador entre tipos
         
-        # Gráfico comparativo P1 vs P2
+        # Gráfico comparativo P1 vsP2
         if gaps_por_tipo:
             st.markdown(f"""
-            ### **Gráfico Comparativo: P1 vs P2**
+            ### **Gráfico Comparativo: P1 vsP2**
             <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
             <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
             </p>
@@ -999,7 +999,7 @@ def main():
                 with col_comp1:
                     st.metric("P1 - Tempo Médio", f"{tempo_p1:.1f}h", help=f"Média geral do período P1: {periodo_texto}")
                 with col_comp2:
-                    st.metric("P2 - Tempo Médio", f"{tempo_p2:.1f}h", help=f"Média geral do período P2: {periodo_p2_texto}")
+                    st.metric("P2 - Tempo Médio", f"{tempo_p2:.1f}h", help=f"Média geral do períodoP2: {periodo_p2_texto}")
                 with col_comp3:
                     if tempo_p1 > 0 and tempo_p2 > 0:
                         evolucao = tempo_p2 - tempo_p1
@@ -1022,9 +1022,9 @@ def main():
                     x='Etapa',
                     y='Tempo Médio (h)',
                     color='Período',
-                    title="<b>Comparação P1 vs P2 por Etapa</b>",
+                    title="<b>Comparação P1 vsP2 por Etapa</b>",
                     text='Tempo Médio (h)',
-                    color_discrete_map={'P1': '#1f4e79', 'P2': '#e74c3c'},  # Azul para P1, vermelho para P2
+                    color_discrete_map={'P1': '#1f4e79', 'P2': '#e74c3c'},  # Azul para P1, vermelho paraP2
                     barmode='group'
                 )
                 
