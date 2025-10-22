@@ -59,6 +59,10 @@ def carregar_dados(limite_registros=10000):
         if 'CLIENTE DE VENDA' in df.columns:
             df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
         
+        # Debug: Verificar clientes únicos após normalização (remover após teste)
+        print("DEBUG - Clientes únicos após normalização:", sorted(df['CLIENTE'].unique()) if 'CLIENTE' in df.columns else [])
+        print("DEBUG - Clientes de venda únicos após normalização:", sorted(df['CLIENTE DE VENDA'].unique()) if 'CLIENTE DE VENDA' in df.columns else [])
+        
         return df
         
     except Exception as e:
@@ -75,26 +79,52 @@ def normalizar_nome_cliente(nome):
     # Converter para string e limpar
     nome_limpo = str(nome).strip().upper()
     
-    # Remover acentos e caracteres especiais desnecessários
-    nome_limpo = nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
+    # Remover acentos e caracteres especiais desnecessários de forma mais abrangente
+    nome_limpo = (nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
+                            .replace('É', 'E').replace('Ê', 'E').replace('Í', 'I')
+                            .replace('Ó', 'O').replace('Ô', 'O').replace('Ú', 'U')
+                            .replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U'))
     
-    # Dicionário de normalização - mapeamento para nomes padrão
+    # LÓGICA INTELIGENTE - Detectar padrões automaticamente (mais robusta)
+    
+    # ADUFERTIL - qualquer variação (incluindo erros de digitação como ADULFERTIL)
+    if any(palavra in nome_limpo for palavra in ['ADUFERTIL', 'ADULFERTIL']) and ('JUNDIAI' in nome_limpo or nome_limpo in ['ADUFERTIL', 'ADULFERTIL']):
+        return 'ADUFERTIL JUNDIAI/SP'
+    
+    # MOSAIC CUBATÃO - qualquer variação
+    if 'MOSAIC' in nome_limpo and ('CUBATAO' in nome_limpo or nome_limpo == 'MOSAIC'):
+        return 'MOSAIC CUBATAO/SP'
+    
+    # MOSAIC UBERABA - qualquer variação
+    if 'MOSAIC' in nome_limpo and 'UBERABA' in nome_limpo:
+        return 'MOSAIC UBERABA/MG'
+    
+    # ELEKEIROZ - qualquer variação
+    if 'ELEKEIROZ' in nome_limpo and ('VARZEA' in nome_limpo or nome_limpo == 'ELEKEIROZ'):
+        return 'ELEKEIROZ VARZEA/SP'
+    
+    # CSRD - qualquer variação
+    if 'CSRD' in nome_limpo:
+        return 'CSRD'
+    
+    # Dicionário de normalização - mapeamento para casos específicos (backup)
     mapeamento_clientes = {
-        # ADUFERTIL - todas as variações
+        # ADUFERTIL - todas as variações explícitas (backup)
         'ADUFERTIL': 'ADUFERTIL JUNDIAI/SP',
         'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAÍ': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
         'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAÍ/SP': 'ADUFERTIL JUNDIAI/SP',
+        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
         'ADUFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',
         'ADULFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',  # Correção de digitação
+        'ADULFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',   # Nova variação encontrada
         
         # MOSAIC CUBATÃO - todas as variações
         'MOSAIC': 'MOSAIC CUBATAO/SP',
         'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP', 
-        'MOSAIC CUBATÃO': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP',
         'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATÃO/SP': 'MOSAIC CUBATAO/SP',
+        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
         'MOSAIC CUBATAO 0099-60/SP': 'MOSAIC CUBATAO/SP',
         'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
         
@@ -107,9 +137,9 @@ def normalizar_nome_cliente(nome):
         # ELEKEIROZ - todas as variações
         'ELEKEIROZ': 'ELEKEIROZ VARZEA/SP',
         'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VÁRZEA': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
         'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VÁRZEA/SP': 'ELEKEIROZ VARZEA/SP',
+        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
         'ELEKEIROZ / VARZEA - SP': 'ELEKEIROZ VARZEA/SP',
         
         # CSRD - manter como está
@@ -138,8 +168,21 @@ def normalizar_cliente_venda(nome):
     # Converter para string e limpar
     nome_limpo = str(nome).strip().upper()
     
-    # Remover acentos e caracteres especiais desnecessários
-    nome_limpo = nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C').replace('É', 'E').replace('Ê', 'E')
+    # Remover acentos e caracteres especiais desnecessários de forma mais abrangente
+    nome_limpo = (nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
+                            .replace('É', 'E').replace('Ê', 'E').replace('Í', 'I')
+                            .replace('Ó', 'O').replace('Ô', 'O').replace('Ú', 'U')
+                            .replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U'))
+    
+    # LÓGICA INTELIGENTE - Detectar padrões automaticamente
+    
+    # ADUBOS ARAGUAIA - qualquer variação
+    if 'ADUBOS' in nome_limpo and ('ARAG' in nome_limpo or 'ANAPOLIS' in nome_limpo or 'CATALAO' in nome_limpo):
+        return 'ADUBOS ARAG.ANAPOLIS/GO'
+    
+    # ADUFERTIL ALFENAS - qualquer variação
+    if any(palavra in nome_limpo for palavra in ['ADUFERTIL', 'ADULFERTIL']) and 'ALFENAS' in nome_limpo:
+        return 'ADUFERTIL ALFENAS/MG'
     
     # Dicionário de normalização para CLIENTES DE VENDA
     mapeamento_clientes_venda = {
@@ -240,6 +283,11 @@ def main():
     
     # TÍTULO PRINCIPAL DOS FILTROS
     st.sidebar.markdown("# Filtros de Análise")
+    
+    # Botão para limpar cache e forçar atualização dos dados
+    if st.sidebar.button("🔄 Atualizar Dados", help="Força o recarregamento dos dados da planilha com normalização atualizada"):
+        st.cache_data.clear()
+        st.rerun()
     
     # Calcular períodos disponíveis
     if 'DATA' in df.columns:
