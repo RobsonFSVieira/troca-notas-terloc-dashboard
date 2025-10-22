@@ -373,6 +373,16 @@ def main():
     def calcular_e_formatar_tempo(df, col_data, col_hora1, col_hora2):
         """Calcula tempo médio entre duas etapas e formata como h:mm:ss"""
         try:
+            # Verificar se a coluna 'HORA RECEBIMENTO NF DE VENDA' existe ou tem nome similar
+            if col_hora2 == 'HORA RECEBIMENTO NF DE VENDA':
+                # Procurar variações do nome da coluna
+                colunas_similares = [col for col in df.columns if 'NF' in col.upper() and 'VENDA' in col.upper()]
+                if colunas_similares:
+                    col_hora2 = colunas_similares[0]  # Usar a primeira encontrada
+                elif 'HORA RECEBIMENTO NF DE VENDA' not in df.columns:
+                    # Se não encontrar, retornar 0:00:00 (explicando por que está zerado em setembro)
+                    return "0:00:00"
+            
             if col_data in df.columns and col_hora1 in df.columns and col_hora2 in df.columns:
                 datetime1 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora1].astype(str), errors='coerce')
                 datetime2 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora2].astype(str), errors='coerce')
@@ -389,6 +399,12 @@ def main():
             return "0:00:00"
         except:
             return "0:00:00"
+    
+    # Verificar se existe a coluna crítica para o cálculo
+    if 'HORA RECEBIMENTO NF DE VENDA' not in df.columns:
+        colunas_nf_venda = [col for col in df.columns if 'NF' in col.upper() and 'VENDA' in col.upper()]
+        if not colunas_nf_venda:
+            st.warning("⚠️ **Aviso**: A coluna 'HORA RECEBIMENTO NF DE VENDA' não foi encontrada neste período. O campo 'Espera pela Nota de Venda' será exibido como 0:00:00.")
     
     # Calcular tempos médios reais
     tempo_ticket_senha = calcular_e_formatar_tempo(df, 'DATA  TICKET', 'HORA TICKET', 'HORARIO SENHA ')
