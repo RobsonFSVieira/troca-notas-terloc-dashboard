@@ -126,7 +126,6 @@ def normalizar_nome_cliente(nome):
 
 def main():
     st.title("Trocas de Nota Terloc Sólidos")
-    st.markdown("### Análise de Tempos Entre Etapas do Processo")
     
     # Volume fixo - sem opção para o usuário
     limite_registros = 50000  # Valor fixo otimizado
@@ -189,6 +188,12 @@ def main():
             df = df_filtrado
             data_inicio = data_inicio_p1
             data_fim = data_fim_p1
+            
+            # VISÃO GERAL - Movida para cima, logo após o título principal
+            periodo_str = f"Período 1 (P1): {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
+            st.markdown(f"""
+            ### {periodo_str}
+            """, unsafe_allow_html=True)
     
     # SEÇÃO EXPANSÍVEL - Clientes (multiselect)
     with st.sidebar.expander("Clientes", expanded=True):
@@ -253,15 +258,6 @@ def main():
                     st.text(f"• {cliente}")
     
     # MÉTRICAS PRINCIPAIS - Padrão de espaçamento
-    if 'data_inicio' in locals():
-        periodo_str = f"Período 1 (P1): {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
-        st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 30px;">Visão Geral ({periodo_str})</h2>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <h2 style="margin-bottom: 0px; margin-top: 30px;">Visão Geral</h2>
-        """, unsafe_allow_html=True)
     
     # Função para calcular tempo médio e formatar
     def calcular_e_formatar_tempo(df, col_data, col_hora1, col_hora2):
