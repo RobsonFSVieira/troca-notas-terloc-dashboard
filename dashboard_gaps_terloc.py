@@ -197,11 +197,13 @@ def normalizar_cliente_venda(nome):
         'SAFRA IND. FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
         'SAFRA IND.FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
         
-        # USINA SÃO MANOEL /SP
-        'USINA SÃO MANOEL /SP': 'USINA SÃO MANOEL/SP',
-        'USINA SÃO MANOEL/SP': 'USINA SÃO MANOEL/SP',
-        'USINA SAO MANUEL/SP': 'USINA SÃO MANOEL/SP',
-        'USINA SÃO MANUEL/SP': 'USINA SÃO MANOEL/SP',
+        # USINA SAO MANOEL/SP (padronizado)
+        'USINA SAO MANOEL /SP': 'USINA SAO MANOEL/SP',
+        'USINA SAO MANOEL/SP': 'USINA SAO MANOEL/SP',
+        'USINA SÃO MANOEL /SP': 'USINA SAO MANOEL/SP',
+        'USINA SÃO MANOEL/SP': 'USINA SAO MANOEL/SP',
+        'USINA SAO MANUEL/SP': 'USINA SAO MANOEL/SP',
+        'USINA SÃO MANUEL/SP': 'USINA SAO MANOEL/SP',
         
         # Nomes corretos que já estão padronizados
         'BONFINOPOLIS/MG': 'BONFINOPOLIS/MG',
@@ -216,14 +218,9 @@ def normalizar_cliente_venda(nome):
         'USINA SANTA ADELIA S/A': 'USINA SANTA ADELIA S/A'
     }
     
-    # Tentar encontrar correspondência exata primeiro
+    # Buscar correspondência exata no mapeamento
     if nome_limpo in mapeamento_clientes_venda:
         return mapeamento_clientes_venda[nome_limpo]
-    
-    # Busca por similaridade (contém parte do nome)
-    for chave, valor_padrao in mapeamento_clientes_venda.items():
-        if chave in nome_limpo or nome_limpo in chave:
-            return valor_padrao
     
     # Se não encontrou correspondência, retorna o nome original limpo
     return nome_limpo
