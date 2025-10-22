@@ -525,6 +525,148 @@ def main():
 
     st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
+    # TEMPO TOTAL DE PERMANÊNCIA - Nova análise para o gerente
+    st.markdown(f"""
+    <h3 style="margin-bottom: 0px; margin-top: 20px;">Tempo Total de Permanência - (Período P1: {periodo_texto})</h3>
+    <p style="margin-bottom: 15px; color: #666; font-size: 12px;">
+    Análise do tempo total que cada processo permanece no sistema (Hora de Liberação - Hora Ticket)
+    </p>
+    """, unsafe_allow_html=True)
+
+    # Calcular Tempo Total de Permanência
+    if 'HORA TICKET' in df.columns and 'HORARIO DE LIBERAÇÃO' in df.columns and 'data_convertida' in df.columns:
+        df_permanencia = df.copy()
+        
+        # Combinar data com horários para criar datetime completo
+        try:
+            df_permanencia['datetime_ticket'] = pd.to_datetime(
+                df_permanencia['data_convertida'].astype(str) + ' ' + 
+                df_permanencia['HORA TICKET'].astype(str), 
+                errors='coerce'
+            )
+            df_permanencia['datetime_liberacao'] = pd.to_datetime(
+                df_permanencia['data_convertida'].astype(str) + ' ' + 
+                df_permanencia['HORARIO DE LIBERAÇÃO'].astype(str), 
+                errors='coerce'
+            )
+            
+            # Calcular diferença em horas
+            df_permanencia['tempo_permanencia_segundos'] = (
+                df_permanencia['datetime_liberacao'] - df_permanencia['datetime_ticket']
+            ).dt.total_seconds()
+            
+            # Filtrar valores válidos (entre 0 e 24 horas)
+            df_permanencia = df_permanencia[
+                (df_permanencia['tempo_permanencia_segundos'].notna()) & 
+                (df_permanencia['tempo_permanencia_segundos'] >= 0) & 
+                (df_permanencia['tempo_permanencia_segundos'] <= 24*3600)
+            ].copy()
+            
+            if len(df_permanencia) > 0:
+                # Converter para horas e minutos
+                df_permanencia['tempo_permanencia_horas'] = df_permanencia['tempo_permanencia_segundos'] / 3600
+                df_permanencia['tempo_formatado'] = df_permanencia['tempo_permanencia_segundos'].apply(
+                    lambda x: f"{int(x//3600):02d}:{int((x%3600)//60):02d}" if pd.notna(x) else "N/A"
+                )
+                
+                # Métricas principais
+                media_permanencia = df_permanencia['tempo_permanencia_horas'].mean()
+                max_permanencia = df_permanencia['tempo_permanencia_horas'].max()
+                total_processos_validos = len(df_permanencia)
+                total_processos_periodo = len(df)
+                processos_sem_dados = total_processos_periodo - total_processos_validos
+                
+                # Exibir métricas principais
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    # Converter para formato HH:MM
+                    media_hh_mm = f"{int(media_permanencia)}:{int((media_permanencia % 1) * 60):02d}"
+                    st.metric("Média de Permanência", media_hh_mm, 
+                             help="Tempo médio que um processo permanece no sistema")
+                with col2:
+                    # Converter para formato HH:MM
+                    max_hh_mm = f"{int(max_permanencia)}:{int((max_permanencia % 1) * 60):02d}"
+                    st.metric("Maior Tempo", max_hh_mm, 
+                             help="Processo que demorou mais tempo")
+                with col3:
+                    delta_info = f"-{processos_sem_dados} sem dados" if processos_sem_dados > 0 else "Todos válidos"
+                    st.metric("Processos Analisados", f"{total_processos_validos}", 
+                             delta=delta_info,
+                             help=f"Processos com dados válidos para análise\nTotal do período: {total_processos_periodo}\nSem dados de horário: {processos_sem_dados}")
+                
+                # Tabela detalhada (similar ao anexo)
+                st.markdown("#### **Detalhamento dos Processos**")
+                
+                # Preparar dados para exibição
+                df_exibicao = df_permanencia[[
+                    'data_convertida', 'PLACA', 'MOTORISTA', 'HORA TICKET', 
+                    'HORARIO DE LIBERAÇÃO', 'tempo_formatado'
+                ]].copy()
+                
+                df_exibicao.columns = [
+                    'Data', 'Placa', 'Motorista', 'Hora Ticket', 
+                    'Horário Liberação', 'Tempo Total Permanência'
+                ]
+                
+                # Ordenar por tempo de permanência (maior para menor)
+                df_exibicao = df_exibicao.sort_values('Tempo Total Permanência', ascending=False)
+                
+                # Exibir tabela com paginação
+                st.dataframe(
+                    df_exibicao, 
+                    use_container_width=True,
+                    height=400,
+                    column_config={
+                        "Data": st.column_config.DateColumn("Data", format="DD/MM/YYYY"),
+                        "Tempo Total Permanência": st.column_config.TextColumn(
+                            "Tempo Total Permanência",
+                            help="Formato: HH:MM"
+                        )
+                    }
+                )
+                
+                # Gráfico de distribuição dos tempos
+                st.markdown("#### **Distribuição dos Tempos de Permanência**")
+                
+                # Definir bins sequenciais de 0 até o máximo (arredondado para cima)
+                import math
+                max_horas = math.ceil(max_permanencia)
+                bins = list(range(0, max_horas + 1))  # [0, 1, 2, 3, ..., max_horas]
+                
+                fig_permanencia = px.histogram(
+                    df_permanencia, 
+                    x='tempo_permanencia_horas',
+                    title="<b>Distribuição dos Tempos de Permanência</b>",
+                    labels={'tempo_permanencia_horas': 'Tempo de Permanência (horas)', 'count': 'Quantidade'},
+                    color_discrete_sequence=['#1f4e79'],
+                    nbins=len(bins)-1  # Número de intervalos
+                )
+                
+                fig_permanencia.update_layout(
+                    title_font={'size': 18, 'color': '#1f4e79'},
+                    xaxis_title="<b>Tempo de Permanência (horas)</b>",
+                    yaxis_title="<b>Quantidade de Processos</b>",
+                    height=400,
+                    xaxis=dict(
+                        tickmode='linear',
+                        tick0=0,
+                        dtick=1,  # Mostrar tick a cada 1 hora
+                        range=[0, max_horas]
+                    )
+                )
+                
+                st.plotly_chart(fig_permanencia, use_container_width=True)
+                
+            else:
+                st.warning("⚠️ Não foram encontrados dados válidos para calcular o tempo de permanência.")
+                
+        except Exception as e:
+            st.error(f"❌ Erro ao calcular tempo de permanência: {str(e)}")
+    else:
+        st.warning("⚠️ Colunas necessárias não encontradas: 'HORA TICKET' e 'HORARIO DE LIBERAÇÃO'")
+
+    st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
+
     # Atendimentos Diários - Comparação P1 vsP2
     periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
     st.markdown(f"""
