@@ -446,16 +446,16 @@ def main():
 
     with col3:
         st.metric(
-            "Tempo: Senha → Portaria", 
+            "Tempo: Senha → Gate", 
             tempo_senha_gate,
-            help="RETIRADA DA SENHA ATÉ CHEGADA NA PORTARIA\n\nTempo médio entre retirar a senha e chegar na portaria (gate) para apresentar os documentos e iniciar a troca propriamente dita."
+            help="RETIRADA DA SENHA ATÉ CHEGADA NO GATE\n\nTempo médio entre retirar a senha e chegar no gate para apresentar os documentos e iniciar a troca propriamente dita."
         )
 
     with col4:
         st.metric(
-            "Tempo: Portaria → Nota",
+            "Tempo: Gate → Nota",
             tempo_gate_nf,
-            help="PORTARIA ATÉ RECEBIMENTO DA NOVA NOTA\n\nTempo médio que leva para processar a troca na portaria e receber a nova nota fiscal de venda. Esta é uma das etapas mais críticas do processo."
+            help="GATE ATÉ RECEBIMENTO DA NOVA NOTA\n\nTempo médio que leva para processar a troca no gate e receber a nova nota fiscal de venda. Esta é uma das etapas mais críticas do processo."
         )
 
     with col5:
