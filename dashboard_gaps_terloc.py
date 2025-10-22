@@ -71,7 +71,7 @@ def carregar_dados(limite_registros=10000):
 
 def normalizar_nome_cliente(nome):
     """
-    Normaliza nomes de clientes para resolver inconsistências de digitação
+    Normaliza nomes de clientes usando correção automática de erros típicos de digitação
     """
     if pd.isna(nome) or nome == '':
         return 'NÃO INFORMADO'
@@ -79,84 +79,36 @@ def normalizar_nome_cliente(nome):
     # Converter para string e limpar
     nome_limpo = str(nome).strip().upper()
     
-    # Remover acentos e caracteres especiais desnecessários de forma mais abrangente
+    # Remover acentos e caracteres especiais
     nome_limpo = (nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
                             .replace('É', 'E').replace('Ê', 'E').replace('Í', 'I')
                             .replace('Ó', 'O').replace('Ô', 'O').replace('Ú', 'U')
                             .replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U'))
     
-    # LÓGICA INTELIGENTE - Detectar padrões automaticamente (mais robusta)
+    # CORREÇÃO AUTOMÁTICA DE ERROS DE DIGITAÇÃO
     
-    # ADUFERTIL - qualquer variação (incluindo erros de digitação como ADULFERTIL)
-    if any(palavra in nome_limpo for palavra in ['ADUFERTIL', 'ADULFERTIL']) and ('JUNDIAI' in nome_limpo or nome_limpo in ['ADUFERTIL', 'ADULFERTIL']):
+    # 1. ELEKEIROZ - Capturar TODAS as variações com erros de digitação
+    if any(variacao in nome_limpo for variacao in ['ELEKEIROZ', 'ELEIKEIROZ', 'ELEQUEIROZ', 'ELEQUEIOZ', 'ELKEIROZ']):
+        return 'ELEKEIROZ VARZEA/SP'
+    
+    # 2. ADUFERTIL - Capturar todas as variações
+    if any(variacao in nome_limpo for variacao in ['ADUFERTIL', 'ADULFERTIL', 'ADUFETIL', 'ADUFERIL']):
         return 'ADUFERTIL JUNDIAI/SP'
     
-    # MOSAIC CUBATÃO - qualquer variação
+    # 3. MOSAIC CUBATÃO
     if 'MOSAIC' in nome_limpo and ('CUBATAO' in nome_limpo or nome_limpo == 'MOSAIC'):
         return 'MOSAIC CUBATAO/SP'
     
-    # MOSAIC UBERABA - qualquer variação
+    # 4. MOSAIC UBERABA
     if 'MOSAIC' in nome_limpo and 'UBERABA' in nome_limpo:
         return 'MOSAIC UBERABA/MG'
     
-    # ELEKEIROZ - qualquer variação
-    if 'ELEKEIROZ' in nome_limpo and ('VARZEA' in nome_limpo or nome_limpo == 'ELEKEIROZ'):
-        return 'ELEKEIROZ VARZEA/SP'
-    
-    # CSRD - qualquer variação
+    # 5. CSRD
     if 'CSRD' in nome_limpo:
         return 'CSRD'
     
-    # Dicionário de normalização - mapeamento para casos específicos (backup)
-    mapeamento_clientes = {
-        # ADUFERTIL - todas as variações explícitas (backup)
-        'ADUFERTIL': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAI': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',
-        'ADUFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',
-        'ADULFERTIL JUNDIAI SP': 'ADUFERTIL JUNDIAI/SP',  # Correção de digitação
-        'ADULFERTIL JUNDIAI/SP': 'ADUFERTIL JUNDIAI/SP',   # Nova variação encontrada
-        
-        # MOSAIC CUBATÃO - todas as variações
-        'MOSAIC': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP', 
-        'MOSAIC CUBATAO': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATAO 0099-60/SP': 'MOSAIC CUBATAO/SP',
-        'MOSAIC CUBATAO/SP': 'MOSAIC CUBATAO/SP',
-        
-        # MOSAIC UBERABA - todas as variações  
-        'MOSAIC UBERABA': 'MOSAIC UBERABA/MG',
-        'MOSAIC UBERABA/MG': 'MOSAIC UBERABA/MG',
-        'MOSAIC UBERABA 0110-00/MG': 'MOSAIC UBERABA/MG',
-        'MOSAIC UBERABA 0110-00': 'MOSAIC UBERABA/MG',
-        
-        # ELEKEIROZ - todas as variações
-        'ELEKEIROZ': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VARZEA': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ VARZEA/SP': 'ELEKEIROZ VARZEA/SP',
-        'ELEKEIROZ / VARZEA - SP': 'ELEKEIROZ VARZEA/SP',
-        
-        # CSRD - manter como está
-        'CSRD': 'CSRD'
-    }
-    
-    # Tentar encontrar correspondência exata primeiro
-    if nome_limpo in mapeamento_clientes:
-        return mapeamento_clientes[nome_limpo]
-    
-    # Busca por similaridade (contém parte do nome)
-    for chave, valor_padrao in mapeamento_clientes.items():
-        if chave in nome_limpo or nome_limpo in chave:
-            return valor_padrao
-    
-    # Se não encontrou correspondência, retorna o nome original limpo
-    return nome_limpo
+    # Se não encontrou padrão conhecido, retorna normalizado
+    return nome_limpo.replace('-', '/').replace('  ', ' ').strip()
 
 def normalizar_cliente_venda(nome):
     """
