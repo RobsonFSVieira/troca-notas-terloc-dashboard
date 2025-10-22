@@ -511,7 +511,9 @@ def main():
             yaxis_title="Quantidade de Atendimentos",
             xaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
-                'title_font': {'size': 16, 'color': '#1f4e79'}
+                'title_font': {'size': 16, 'color': '#1f4e79'},
+                'tickformat': '%d',  # Mostrar apenas o dia
+                'dtick': 'D1'  # Um tick por dia
             },
             yaxis={
                 'tickfont': {'size': 14, 'color': '#1f4e79'},
