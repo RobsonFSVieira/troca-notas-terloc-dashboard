@@ -260,22 +260,35 @@ def main():
                 with col1:
                     st.markdown("**Início P1**")
                     data_inicio_p1 = st.date_input("", value=data_min, key="inicio_p1", 
-                                                  label_visibility="collapsed", format="DD/MM/YYYY")
+                                                  label_visibility="collapsed", format="DD/MM/YYYY",
+                                                  min_value=data_min, max_value=data_max)
                 with col2:
                     st.markdown("**Fim P1**")
                     data_fim_p1 = st.date_input("", value=data_max, key="fim_p1", 
-                                               label_visibility="collapsed", format="DD/MM/YYYY")
+                                               label_visibility="collapsed", format="DD/MM/YYYY",
+                                               min_value=data_min, max_value=data_max)
                 
                 # P2 em linha (lado a lado) - formato dd/mm/aaaa
                 col3, col4 = st.columns(2)
                 with col3:
                     st.markdown("**Início P2**")
                     data_inicio_p2 = st.date_input("", value=data_min, key="inicio_p2", 
-                                                  label_visibility="collapsed", format="DD/MM/YYYY")
+                                                  label_visibility="collapsed", format="DD/MM/YYYY",
+                                                  min_value=data_min, max_value=data_max)
                 with col4:
                     st.markdown("**Fim P2**") 
                     data_fim_p2 = st.date_input("", value=data_max, key="fim_p2", 
-                                               label_visibility="collapsed", format="DD/MM/YYYY")
+                                               label_visibility="collapsed", format="DD/MM/YYYY",
+                                               min_value=data_min, max_value=data_max)
+            
+            # VALIDAÇÃO DAS DATAS
+            if data_inicio_p1 > data_fim_p1:
+                st.sidebar.error("❌ **P1**: Data de início deve ser menor ou igual à data de fim!")
+                st.stop()
+            
+            if data_inicio_p2 > data_fim_p2:
+                st.sidebar.error("❌ **P2**: Data de início deve ser menor ou igual à data de fim!")
+                st.stop()
             
             # APLICAR FILTRO P1 COMO PRINCIPAL (sempre ativo)
             mask_periodo_p1 = (df['data_convertida'].dt.date >= data_inicio_p1) & (df['data_convertida'].dt.date <= data_fim_p1)
