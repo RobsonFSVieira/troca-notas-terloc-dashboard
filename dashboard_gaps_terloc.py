@@ -16,54 +16,54 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Função para carregar dados - SIMPLIFICADA
-@st.cache_data(ttl=600)
-def carregar_dados(limite_registros=10000):
-    """Carrega dados da planilha TERLOC"""
-    try:
-        # Lista de possíveis localizações do arquivo
-        possiveis_arquivos = [
-            'PLANILHA TROCA DE NOTA TERLOC.xlsx',
-            './PLANILHA TROCA DE NOTA TERLOC.xlsx',
-            'data/PLANILHA TROCA DE NOTA TERLOC.xlsx',
-            os.path.join(os.path.dirname(__file__), 'PLANILHA TROCA DE NOTA TERLOC.xlsx')
-        ]
+# � CARREGAMENTO INTELIGENTE - Monitor de Mudanças + Cache
+try:
+    from sistema_hibrido_terloc import carregar_dados_streamlit, interface_upload_streamlit
+    
+    @st.cache_data(ttl=7200, show_spinner=False)  # Cache por 2 horas
+    def carregar_dados(limite_registros=50000):
+        """Carrega dados com sistema híbrido (padrão + upload)"""
+        return carregar_dados_streamlit(limite_registros)
         
-        arquivo_excel = None
-        for arquivo in possiveis_arquivos:
-            if os.path.exists(arquivo):
-                arquivo_excel = arquivo
-                break
-        
-        if not arquivo_excel:
-            raise FileNotFoundError("Planilha 'PLANILHA TROCA DE NOTA TERLOC.xlsx' não encontrada")
-        
-        df = pd.read_excel(
-            arquivo_excel, 
-            sheet_name='PLANILHA ÚNICA', 
-            nrows=limite_registros
-        )
-        
-        # Identificar processos completos (simplificado)
-        colunas_tempo = [col for col in df.columns if any(termo in col.upper() for termo in ['HORA', 'DATA', 'TICKET', 'LIBERAÇÃO'])]
-        
-        # Contar campos preenchidos
-        df['campos_preenchidos'] = df[colunas_tempo].notna().sum(axis=1)
-        df['processo_completo'] = df['campos_preenchidos'] >= len(colunas_tempo) * 0.6  # 60% preenchido
-        
-        # Normalizar nomes de clientes (apenas CLIENTE - origem)
-        if 'CLIENTE' in df.columns:
-            df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
-        
-        # Normalizar CLIENTE DE VENDA com regras específicas para destinos
-        if 'CLIENTE DE VENDA' in df.columns:
-            df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
-        
-        return df
-        
-    except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
-        return None
+except ImportError:
+    # Fallback para sistema antigo se carregador não estiver disponível
+    @st.cache_data(ttl=600)
+    def carregar_dados(limite_registros=10000):
+        """FALLBACK: Carrega dados da planilha TERLOC (sistema antigo)"""
+        try:
+            possiveis_arquivos = [
+                'PLANILHA TROCA DE NOTA TERLOC.xlsx',
+                './PLANILHA TROCA DE NOTA TERLOC.xlsx',
+                'data/PLANILHA TROCA DE NOTA TERLOC.xlsx',
+                os.path.join(os.path.dirname(__file__), 'PLANILHA TROCA DE NOTA TERLOC.xlsx')
+            ]
+            
+            arquivo_excel = None
+            for arquivo in possiveis_arquivos:
+                if os.path.exists(arquivo):
+                    arquivo_excel = arquivo
+                    break
+            
+            if not arquivo_excel:
+                raise FileNotFoundError("Planilha 'PLANILHA TROCA DE NOTA TERLOC.xlsx' não encontrada")
+            
+            df = pd.read_excel(arquivo_excel, sheet_name='PLANILHA ÚNICA', nrows=limite_registros)
+            
+            # Processamento básico
+            colunas_tempo = [col for col in df.columns if any(termo in col.upper() for termo in ['HORA', 'DATA', 'TICKET', 'LIBERAÇÃO'])]
+            df['campos_preenchidos'] = df[colunas_tempo].notna().sum(axis=1)
+            df['processo_completo'] = df['campos_preenchidos'] >= len(colunas_tempo) * 0.6
+            
+            if 'CLIENTE' in df.columns:
+                df['CLIENTE'] = df['CLIENTE'].apply(normalizar_nome_cliente)
+            if 'CLIENTE DE VENDA' in df.columns:
+                df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(normalizar_cliente_venda)
+            
+            return df
+            
+        except Exception as e:
+            st.error(f"Erro ao carregar dados: {e}")
+            return None
 
 def normalizar_nome_cliente(nome):
     """
@@ -229,11 +229,19 @@ def main():
         st.error("Erro ao carregar dados")
         return
     
+    # SEÇÃO DE UPLOAD HÍBRIDO
+    interface_upload_streamlit()
+
     # TÍTULO PRINCIPAL DOS FILTROS
     st.sidebar.markdown("# Filtros de Análise")
     
     # Variável padrão do período (será atualizada se houver dados válidos)
     periodo_texto = "Período não definido"
+    
+    # Inicializar variáveis padrão para datas P2 (evitar erro UnboundLocalError)
+    data_inicio_p2 = None
+    data_fim_p2 = None
+    df_p2 = pd.DataFrame()  # DataFrame vazio por padrão
     
     # Calcular períodos disponíveis
     if 'DATA' in df.columns:
@@ -668,13 +676,21 @@ def main():
     st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
 
     # Atendimentos Diários - Comparação P1 vsP2
-    periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
-    st.markdown(f"""
-    <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - Comparação P1 vsP2</h3>
-    <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
-    <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
-    </p>
-    """, unsafe_allow_html=True)
+    if data_inicio_p2 is not None and data_fim_p2 is not None:
+        periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
+        st.markdown(f"""
+        <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - Comparação P1 vsP2</h3>
+        <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+        <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
+        </p>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <h3 style="margin-bottom: 0px; margin-top: 20px;">Atendimentos Diários - P1</h3>
+        <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+        <strong>P1:</strong> {periodo_texto}
+        </p>
+        """, unsafe_allow_html=True)
 
     # Gráfico de atendimentos por data (full width)
     if 'data_convertida' in df.columns:
@@ -782,6 +798,97 @@ def main():
             margin=dict(l=80, r=40, t=100, b=80)
         )
         st.plotly_chart(fig_diarios, use_container_width=True)
+
+        # Gráfico de Volume Diário por Cliente
+        st.markdown('<div style="height:20px"></div>', unsafe_allow_html=True)
+        st.markdown("#### **Volume Diário por Cliente - (Período P1)**")
+        st.markdown('<p style="margin-bottom: 15px; color: #666; font-size: 12px;">Movimentação diária de cada cliente ao longo do período selecionado</p>', unsafe_allow_html=True)
+        
+        if 'CLIENTE' in df.columns and 'data_convertida' in df.columns:
+            # Criar tabela pivô: Data x Cliente
+            df_cliente_data = df.groupby([df['data_convertida'].dt.date, 'CLIENTE']).size().reset_index()
+            df_cliente_data.columns = ['Data', 'Cliente', 'Quantidade']
+            
+            # Pegar apenas os top 10 clientes por volume total para não poluir o gráfico
+            top_clientes = df['CLIENTE'].value_counts().head(10).index.tolist()
+            df_cliente_data_top = df_cliente_data[df_cliente_data['Cliente'].isin(top_clientes)]
+            
+            if len(df_cliente_data_top) > 0:
+                # Definir paleta de cores vibrantes e contrastantes
+                cores_vibrantes = [
+                    '#FF6B35',  # Laranja vibrante
+                    '#004E89',  # Azul escuro
+                    '#00A859',  # Verde vibrante
+                    '#8A2BE2',  # Azul violeta
+                    '#DC143C',  # Vermelho carmesim
+                    '#FF1493',  # Rosa choque
+                    '#32CD32',  # Verde limão
+                    '#FF8C00',  # Laranja escuro
+                    '#9400D3',  # Violeta escuro
+                    '#1E90FF'   # Azul dodger
+                ]
+                
+                # Criar gráfico de linhas
+                fig_clientes_tempo = px.line(
+                    df_cliente_data_top,
+                    x='Data', 
+                    y='Quantidade',
+                    color='Cliente',
+                    title="<b>Evolução Diária do Volume por Cliente</b>",
+                    markers=True,
+                    line_shape='linear',
+                    color_discrete_sequence=cores_vibrantes
+                )
+                
+                # Personalizar o gráfico
+                fig_clientes_tempo.update_traces(
+                    mode='lines+markers',
+                    line=dict(width=3),
+                    marker=dict(size=6)
+                )
+                
+                fig_clientes_tempo.update_layout(
+                    height=500,
+                    title_font={'size': 18, 'color': '#1f4e79'},
+                    xaxis_title="<b>Data</b>",
+                    yaxis_title="<b>Quantidade de Atendimentos</b>",
+                    xaxis={
+                        'tickfont': {'size': 12, 'color': '#1f4e79'},
+                        'title_font': {'size': 14, 'color': '#1f4e79'},
+                        'tickformat': '%-d %b',  # Formato de data limpo
+                        'dtick': 'D1'
+                    },
+                    yaxis={
+                        'tickfont': {'size': 12, 'color': '#1f4e79'},
+                        'title_font': {'size': 14, 'color': '#1f4e79'}
+                    },
+                    legend={
+                        'font': {'size': 11},
+                        'bgcolor': 'rgba(255,255,255,0.8)',
+                        'bordercolor': '#e0e0e0',
+                        'borderwidth': 1
+                    },
+                    margin=dict(l=80, r=40, t=80, b=80),
+                    hovermode='x unified'
+                )
+                
+                st.plotly_chart(fig_clientes_tempo, use_container_width=True)
+                
+                # Informações complementares
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    total_clientes_periodo = df['CLIENTE'].nunique()
+                    st.metric("Total de Clientes", total_clientes_periodo, help="Quantidade total de clientes únicos no período")
+                with col2:
+                    clientes_ativos_por_dia = df_cliente_data.groupby('Data')['Cliente'].nunique().mean()
+                    st.metric("Clientes Ativos/Dia", f"{clientes_ativos_por_dia:.1f}", help="Média de clientes únicos por dia")
+                with col3:
+                    st.metric("Clientes no Gráfico", "10", help="Top 10 clientes com maior volume total")
+                    
+            else:
+                st.warning("⚠️ Não há dados suficientes para gerar o gráfico de clientes por data.")
+        else:
+            st.warning("⚠️ Colunas necessárias não encontradas: 'CLIENTE' e 'data_convertida'")
     
     # Separador discreto antes da linha do tempo
     st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
@@ -1006,17 +1113,28 @@ def main():
         # Separador discreto
         st.markdown('<div style="margin: 30px 0; border-bottom: 1px solid #e0e0e0;"></div>', unsafe_allow_html=True)
         
-        periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
-        
-        st.markdown(f"""
-        <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Comparação P1 vsP2</h2>
-        <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
-        <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
-        </p>
-        <p style="margin-bottom: 15px; color: #666; font-size: 12px;">
-        Compare a evolução da performance entre os dois períodos selecionados.
-        </p>
-        """, unsafe_allow_html=True)
+        if data_inicio_p2 is not None and data_fim_p2 is not None:
+            periodo_p2_texto = f"{data_inicio_p2.strftime('%d/%m/%Y')} a {data_fim_p2.strftime('%d/%m/%Y')}"
+            
+            st.markdown(f"""
+            <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - Comparação P1 vsP2</h2>
+            <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+            <strong>P1:</strong> {periodo_texto} | <strong>P2:</strong> {periodo_p2_texto}
+            </p>
+            <p style="margin-bottom: 15px; color: #666; font-size: 12px;">
+            Compare a evolução da performance entre os dois períodos selecionados.
+            </p>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <h2 style="margin-bottom: 0px; margin-top: 20px;">Análise de Gargalos - P1</h2>
+            <p style="margin-bottom: 10px; color: #666; font-size: 14px;">
+            <strong>P1:</strong> {periodo_texto}
+            </p>
+            <p style="margin-bottom: 15px; color: #666; font-size: 12px;">
+            Análise da performance do período selecionado.
+            </p>
+            """, unsafe_allow_html=True)
         
         # Organizar gaps por tipo para comparação
         gaps_por_tipo = {}

@@ -1,0 +1,5 @@
+Fonte: PLANILHA ÚNICA (limitado a 50,000)
+DataHora: 30/10/2025 10:16:58
+Registros: 50,000
+Colunas: 23
+Hash: 0328734255d0e7ce2f6fe023d10c4030
