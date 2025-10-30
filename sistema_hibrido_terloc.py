@@ -499,6 +499,8 @@ def interface_upload_streamlit():
         if st.sidebar.button("🗑️ Remover dados do usuário"):
             if sistema_hibrido.limpar_dados_usuario():
                 st.sidebar.success("Dados removidos!")
+                # Limpar cache para voltar aos dados padrão
+                st.cache_data.clear()
                 st.rerun()
             else:
                 st.sidebar.error("Erro ao remover")
@@ -525,6 +527,8 @@ def interface_upload_streamlit():
                 with st.spinner("Salvando arquivo..."):
                     if sistema_hibrido.salvar_upload_usuario(uploaded_file):
                         st.success("✅ Arquivo salvo com sucesso!")
+                        # Limpar cache para forçar recarregamento dos dados
+                        st.cache_data.clear()
                         st.balloons()
                         time.sleep(2)
                         st.rerun()
