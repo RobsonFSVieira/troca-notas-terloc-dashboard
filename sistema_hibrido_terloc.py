@@ -386,7 +386,9 @@ class SistemaHibridoTerloc:
             
             try:
                 import streamlit as st
-                st.info(f"📊 Colunas mantidas: {len(colunas_para_manter)} de {len(df.columns) + len([c for c in df.columns if c.startswith('Unnamed:')])}")
+                # Mensagem discreta no sidebar
+                with st.sidebar:
+                    st.caption(f"📊 Colunas: {len(colunas_para_manter)} de {len(df.columns) + len([c for c in df.columns if c.startswith('Unnamed:')])}")
             except:
                 print(f"📊 Colunas mantidas: {len(colunas_para_manter)}")
             
@@ -402,22 +404,38 @@ class SistemaHibridoTerloc:
             if 'CLIENTE' in df.columns:
                 try:
                     import streamlit as st
-                    st.info("🔄 Normalizando nomes de clientes...")
+                    # Processamento silencioso, apenas log no sidebar ao final
+                    df['CLIENTE'] = df['CLIENTE'].apply(self.normalizar_nome_cliente)
                 except:
                     print("🔄 Normalizando nomes de clientes...")
-                df['CLIENTE'] = df['CLIENTE'].apply(self.normalizar_nome_cliente)
+                    df['CLIENTE'] = df['CLIENTE'].apply(self.normalizar_nome_cliente)
             
             if 'CLIENTE DE VENDA' in df.columns:
                 try:
                     import streamlit as st
-                    st.info("🔄 Normalizando clientes de venda...")
+                    # Processamento silencioso, apenas log no sidebar ao final
+                    df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(self.normalizar_cliente_venda)
                 except:
                     print("🔄 Normalizando clientes de venda...")
-                df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(self.normalizar_cliente_venda)
+                    df['CLIENTE DE VENDA'] = df['CLIENTE DE VENDA'].apply(self.normalizar_cliente_venda)
             
             # Processar datas se existirem
             if 'DATA' in df.columns:
                 df['data_convertida'] = pd.to_datetime(df['DATA'], errors='coerce')
+            
+            # Mensagem final discreta no sidebar resumindo o processamento
+            try:
+                import streamlit as st
+                with st.sidebar:
+                    processamentos = []
+                    if 'CLIENTE' in df.columns:
+                        processamentos.append("clientes")
+                    if 'CLIENTE DE VENDA' in df.columns:
+                        processamentos.append("clientes de venda")
+                    if processamentos:
+                        st.caption(f"✅ Processado: {', '.join(processamentos)}")
+            except:
+                pass
             
             return df
         except Exception as e:
