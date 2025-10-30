@@ -454,21 +454,22 @@ Hash: {hash_arquivo}"""
         df_usuario, msg_usuario = self.carregar_dados_usuario(limite_registros)
         
         if df_usuario is not None and not df_usuario.empty:
-            st.success(f"✅ {msg_usuario}")
-            st.info("📊 Usando dados enviados pelo usuário")
+            # Mensagem discreta no sidebar
+            with st.sidebar:
+                st.caption(f"✅ {msg_usuario}")
             return df_usuario
         
         # Fallback para dados padrão
         df_padrao, msg_padrao = self.carregar_dados_padrao(limite_registros)
         
         if df_padrao is not None and not df_padrao.empty:
-            st.success(f"✅ {msg_padrao}")
-            st.info("📁 Usando dados padrão do sistema")
+            # Mensagem discreta no sidebar
+            with st.sidebar:
+                st.caption(f"✅ {msg_padrao}")
             return df_padrao
         
-        # Nenhum dado disponível
-        st.error("❌ Nenhum dado disponível")
-        st.warning("💡 Faça upload de uma planilha para começar")
+        # Nenhum dado disponível - mensagem discreta
+        st.warning("⚠️ Nenhum arquivo de dados encontrado")
         return pd.DataFrame()
     
     def limpar_dados_usuario(self):
@@ -487,53 +488,63 @@ Hash: {hash_arquivo}"""
 # Instância global
 sistema_hibrido = SistemaHibridoTerloc()
 
-def interface_upload_streamlit():
-    """Interface de upload no Streamlit"""
-    
-    st.sidebar.markdown("---")
-    st.sidebar.header("📤 Atualizar Dados")
-    
-    # Status atual
-    if sistema_hibrido.arquivo_usuario.exists():
-        st.sidebar.success("✅ Dados do usuário disponíveis")
-        if st.sidebar.button("🗑️ Remover dados do usuário"):
-            if sistema_hibrido.limpar_dados_usuario():
-                st.sidebar.success("Dados removidos!")
-                # Limpar cache para voltar aos dados padrão
-                st.cache_data.clear()
-                st.rerun()
-            else:
-                st.sidebar.error("Erro ao remover")
-    else:
-        st.sidebar.info("📁 Usando dados padrão")
-    
-    # Upload de arquivo
-    uploaded_file = st.sidebar.file_uploader(
-        "Carregar nova planilha",
-        type=['xlsx', 'xls'],
-        help="Envie uma planilha Excel para atualizar os dados",
-        key="upload_planilha"
-    )
-    
-    if uploaded_file is not None:
-        with st.sidebar:
-            st.info("📋 Arquivo recebido...")
-            
-            # Mostrar informações do arquivo
-            st.write(f"**Nome:** {uploaded_file.name}")
-            st.write(f"**Tamanho:** {uploaded_file.size:,} bytes")
-            
-            if st.button("✅ Confirmar Upload", type="primary"):
-                with st.spinner("Salvando arquivo..."):
-                    if sistema_hibrido.salvar_upload_usuario(uploaded_file):
-                        st.success("✅ Arquivo salvo com sucesso!")
-                        # Limpar cache para forçar recarregamento dos dados
-                        st.cache_data.clear()
-                        st.balloons()
-                        time.sleep(2)
-                        st.rerun()
-                    else:
-                        st.error("❌ Erro ao salvar arquivo")
+# ═══════════════════════════════════════════════════════════════════════════════════
+# 📤 INTERFACE DE UPLOAD - TEMPORARIAMENTE OCULTA
+# ═══════════════════════════════════════════════════════════════════════════════════
+# Esta função fornece uma interface no Streamlit para upload de novas planilhas.
+# Para reativar:
+# 1. Descomente toda a função abaixo
+# 2. Descomente o import no dashboard_gaps_terloc.py (linha 21)
+# 3. Descomente a chamada da função no dashboard_gaps_terloc.py (linha ~240)
+# 4. Descomente o botão "Atualizar Dados" no dashboard_gaps_terloc.py (linha ~390)
+#
+# def interface_upload_streamlit():
+#     """Interface de upload no Streamlit"""
+#     
+#     st.sidebar.markdown("---")
+#     st.sidebar.header("📤 Atualizar Dados")
+#     
+#     # Status atual
+#     if sistema_hibrido.arquivo_usuario.exists():
+#         st.sidebar.success("✅ Dados do usuário disponíveis")
+#         if st.sidebar.button("🗑️ Remover dados do usuário"):
+#             if sistema_hibrido.limpar_dados_usuario():
+#                 st.sidebar.success("Dados removidos!")
+#                 # Limpar cache para voltar aos dados padrão
+#                 st.cache_data.clear()
+#                 st.rerun()
+#             else:
+#                 st.sidebar.error("Erro ao remover")
+#     else:
+#         st.sidebar.info("📁 Usando dados padrão")
+#     
+#     # Upload de arquivo
+#     uploaded_file = st.sidebar.file_uploader(
+#         "Carregar nova planilha",
+#         type=['xlsx', 'xls'],
+#         help="Envie uma planilha Excel para atualizar os dados",
+#         key="upload_planilha"
+#     )
+#     
+#     if uploaded_file is not None:
+#         with st.sidebar:
+#             st.info("📋 Arquivo recebido...")
+#             
+#             # Mostrar informações do arquivo
+#             st.write(f"**Nome:** {uploaded_file.name}")
+#             st.write(f"**Tamanho:** {uploaded_file.size:,} bytes")
+#             
+#             if st.button("✅ Confirmar Upload", type="primary"):
+#                 with st.spinner("Salvando arquivo..."):
+#                     if sistema_hibrido.salvar_upload_usuario(uploaded_file):
+#                         st.success("✅ Arquivo salvo com sucesso!")
+#                         # Limpar cache para forçar recarregamento dos dados
+#                         st.cache_data.clear()
+#                         st.balloons()
+#                         time.sleep(2)
+#                         st.rerun()
+#                     else:
+#                         st.error("❌ Erro ao salvar arquivo")
 
 def carregar_dados_streamlit(limite_registros=50000):
     """Função principal para uso no Streamlit"""

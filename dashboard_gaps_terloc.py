@@ -18,7 +18,7 @@ st.set_page_config(
 
 # � CARREGAMENTO INTELIGENTE - Monitor de Mudanças + Cache
 try:
-    from sistema_hibrido_terloc import carregar_dados_streamlit, interface_upload_streamlit
+    from sistema_hibrido_terloc import carregar_dados_streamlit  # interface_upload_streamlit - TEMPORARIAMENTE COMENTADO
     
     @st.cache_data(ttl=7200, show_spinner=False)  # Cache por 2 horas
     def carregar_dados(limite_registros=50000):
@@ -229,8 +229,18 @@ def main():
         st.error("Erro ao carregar dados")
         return
     
-    # SEÇÃO DE UPLOAD HÍBRIDO
-    interface_upload_streamlit()
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    # 📤 SEÇÃO DE UPLOAD HÍBRIDO - TEMPORARIAMENTE OCULTA
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    # 
+    # Para reativar a funcionalidade de upload de novas planilhas:
+    # 1. Descomente a linha abaixo
+    # 2. Descomente o import de interface_upload_streamlit na linha 21
+    # 3. Descomente a função interface_upload_streamlit() no arquivo sistema_hibrido_terloc.py
+    # 4. Descomente o botão "🔄 Atualizar Dados" nas linhas ~380-385
+    #
+    # interface_upload_streamlit()
+    # ═══════════════════════════════════════════════════════════════════════════════════
 
     # TÍTULO PRINCIPAL DOS FILTROS
     st.sidebar.markdown("# Filtros de Análise")
@@ -254,8 +264,8 @@ def main():
             
             # SEÇÃO EXPANSÍVEL - Períodos de Análise
             with st.sidebar.expander("Períodos de Análise", expanded=True):
-                # Info box azul - formato dd/mm/aaaa
-                st.info(f"Período disponível na base: De {data_min.strftime('%d/%m/%Y')} até {data_max.strftime('%d/%m/%Y')}")
+                # Info discreta - formato dd/mm/aaaa
+                st.caption(f"📊 Dados: {data_min.strftime('%d/%m/%Y')} a {data_max.strftime('%d/%m/%Y')}")
                 
                 # P1 em linha (lado a lado) - formato dd/mm/aaaa
                 col1, col2 = st.columns(2)
@@ -376,11 +386,15 @@ def main():
                 for cliente in sorted(clientes_originais.index):
                     st.text(f"• {cliente}")
     
-    # Botão para limpar cache e forçar atualização dos dados (movido para o final)
-    st.sidebar.markdown("---")  # Separador visual
-    if st.sidebar.button("🔄 Atualizar Dados", help="Força o recarregamento dos dados da planilha com normalização atualizada"):
-        st.cache_data.clear()
-        st.rerun()
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    # 🔄 BOTÃO "ATUALIZAR DADOS" - TEMPORARIAMENTE OCULTO
+    # ═══════════════════════════════════════════════════════════════════════════════════
+    # Para reativar, descomente as linhas abaixo:
+    # st.sidebar.markdown("---")  # Separador visual
+    # if st.sidebar.button("🔄 Atualizar Dados", help="Força o recarregamento dos dados da planilha com normalização atualizada"):
+    #     st.cache_data.clear()
+    #     st.rerun()
+    # ═══════════════════════════════════════════════════════════════════════════════════
     
     # MÉTRICAS PRINCIPAIS - Padrão de espaçamento
     
@@ -1465,8 +1479,8 @@ def main():
         # Limitar número de linhas
         df_final = df_final.head(linhas_exibir)
         
-        # Exibir informações da tabela
-        st.info(f"Exibindo {len(df_final):,} registros de {len(df):,} totais | Colunas: {len(colunas_existentes)}")
+        # Informações discretas da tabela
+        st.caption(f"Mostrando {len(df_final):,} de {len(df):,} registros | {len(colunas_existentes)} colunas")
         
         # Exibir a tabela
         st.dataframe(
