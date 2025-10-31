@@ -108,7 +108,7 @@ def normalizar_nome_cliente(nome):
 
 def normalizar_cliente_venda(nome):
     """
-    Normaliza nomes de clientes de venda (destino da carga) para resolver inconsistências
+    Normaliza nomes de clientes de venda usando o arquivo de mapeamento
     """
     if pd.isna(nome) or nome == '':
         return 'NÃO INFORMADO'
@@ -116,106 +116,186 @@ def normalizar_cliente_venda(nome):
     # Converter para string e limpar
     nome_limpo = str(nome).strip().upper()
     
-    # Remover acentos e caracteres especiais desnecessários de forma mais abrangente
-    nome_limpo = (nome_limpo.replace('Ã', 'A').replace('Õ', 'O').replace('Ç', 'C')
-                            .replace('É', 'E').replace('Ê', 'E').replace('Í', 'I')
-                            .replace('Ó', 'O').replace('Ô', 'O').replace('Ú', 'U')
-                            .replace('Ù', 'U').replace('Û', 'U').replace('Ü', 'U'))
-    
-    # LÓGICA INTELIGENTE - Detectar padrões automaticamente
-    
-    # ADUBOS ARAGUAIA - qualquer variação
-    if 'ADUBOS' in nome_limpo and ('ARAG' in nome_limpo or 'ANAPOLIS' in nome_limpo or 'CATALAO' in nome_limpo):
-        return 'ADUBOS ARAG.ANAPOLIS/GO'
-    
-    # ADUFERTIL ALFENAS - qualquer variação
-    if any(palavra in nome_limpo for palavra in ['ADUFERTIL', 'ADULFERTIL']) and 'ALFENAS' in nome_limpo:
-        return 'ADUFERTIL ALFENAS/MG'
-    
-    # Dicionário de normalização para CLIENTES DE VENDA
+    # Dicionário completo baseado no arquivo "Mapeamento de Normalização de Nomes.txt"
     mapeamento_clientes_venda = {
-        # ADUBOS ARAG.ANAPOLIS/GO
-        'ADUBOS ANAPOLIS': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG.ANAPOLIS/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG. ANAPOLIS /GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG. ANAPOLIS/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG. CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG. CATALÃO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAG - CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
-        'ADUBOS ARAGUAIA CATALAO/GO': 'ADUBOS ARAG.ANAPOLIS/GO',
+        # ADUBOS ARAGUAIA ANAPOLIS
+        'ADUBOS ANAPOLIS': 'ADUBOS ARAGUAIA ANAPOLIS',
+        'ADUBOS ARAG. ANAPOLIS /GO': 'ADUBOS ARAGUAIA ANAPOLIS',
+        'ADUBOS ARAG. ANAPOLIS/GO': 'ADUBOS ARAGUAIA ANAPOLIS',
+        'ADUBOS ARAG. ANAPOLIS/MG': 'ADUBOS ARAGUAIA ANAPOLIS',
+        'ADUBOS ARAG.ANAPOLIS/GO': 'ADUBOS ARAGUAIA ANAPOLIS',
         
-        # ADUFERTIL ALFENAS/MG
-        'ADUFERTIL ALFENAS': 'ADUFERTIL ALFENAS/MG',
-        'ADUFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS/MG',
-        'ADULFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS/MG',
+        # ADUBOS ARAGUAIA CATALÃO
+        'ADUBOS ARAG - CATALAO/GO': 'ADUBOS ARAGUAIA CATALÃO',
+        'ADUBOS ARAG. CATALAO/GO': 'ADUBOS ARAGUAIA CATALÃO',
+        'ADUBOS ARAG. CATALÃO/GO': 'ADUBOS ARAGUAIA CATALÃO',
+        'ADUBOS ARAG.CATALAO/GO': 'ADUBOS ARAGUAIA CATALÃO',
+        'ADUBOS ARAGUAIA CATALAO/GO': 'ADUBOS ARAGUAIA CATALÃO',
         
-        # COFCO - SEBASTIANOPOLIS/SP
-        'COFCO - SEBASTIANOPOLIS': 'COFCO - SEBASTIANOPOLIS/SP',
-        'COFCO - SEBASTIANOPOLIS/SP': 'COFCO - SEBASTIANOPOLIS/SP',
-        'COFCO SEBASTIANOPOLIS': 'COFCO - SEBASTIANOPOLIS/SP',
+        # ADUFERTIL ALFENAS
+        'ADUFERTIL - ALFENAS/MG': 'ADUFERTIL ALFENAS',
+        'ADUFÉRTIL - ALFENAS/MG': 'ADUFERTIL ALFENAS',
+        'ADUFERTIL / ALFENAS': 'ADUFERTIL ALFENAS',
+        'ADUFERTIL / ALFENAS/MG': 'ADUFERTIL ALFENAS',
+        'ADUFERTIL ALFENAS': 'ADUFERTIL ALFENAS',
+        'ADUFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS',
+        'ADULFERTIL ALFENAS/MG': 'ADUFERTIL ALFENAS',
         
-        # FASS - NOVA INDEPENDENCIA/SP
-        'FASS - NOVA INDEPENDENCIA': 'FASS - NOVA INDEPENDENCIA/SP',
-        'FASS - NOVA INDEPENDENCIA/SP': 'FASS - NOVA INDEPENDENCIA/SP',
-        'FASS NOVA INDEPENDENCIA': 'FASS - NOVA INDEPENDENCIA/SP',
-        'FASS NOVA INDEPENDENCIA/SP': 'FASS - NOVA INDEPENDENCIA/SP',
+        # BONFINOPOLIS
+        'BONFINOPOLIS/MG': 'BONFINOPOLIS',
         
-        # FASS - SERTAOZINHO/SP
-        'FASS - SERTAOZINHO': 'FASS - SERTAOZINHO/SP',
-        'FASS - SERTAOZINHO/SP': 'FASS - SERTAOZINHO/SP',
-        'FASS - SERTÃOZINHO/SP': 'FASS - SERTAOZINHO/SP',
-        'FASS SERTAOZINHO': 'FASS - SERTAOZINHO/SP',
+        # CAFE BRASIL
+        'CAFE BRASIL /MG': 'CAFE BRASIL',
+        'CAFE BRASIL/MG': 'CAFE BRASIL',
         
-        # ICL JACAREI/SP
-        'ICL JACAREI': 'ICL JACAREI/SP',
-        'ICL JACAREI/SP': 'ICL JACAREI/SP',
-        'ICL JACAREI/SP - 0008/99': 'ICL JACAREI/SP',
-        'ICL JACAREI/SP - 0013/56': 'ICL JACAREI/SP',
+        # COFCO CATANDUVA
+        'COFCO - CATANDUVA/SP': 'COFCO CATANDUVA',
+        'COFCO CATANDUVA': 'COFCO CATANDUVA',
+        'COFCO CATANDUVA/SP': 'COFCO CATANDUVA',
+        'COFCO-CATANDUVA': 'COFCO CATANDUVA',
         
-        # LOYDER - OLIMPIA/SP
-        'LOYDER - OLIMPIA/SP': 'LOYDER - OLIMPIA/SP',
-        'LOYDER OLIMPIA': 'LOYDER - OLIMPIA/SP',
-        'LOYDER OLIMPIA/SP': 'LOYDER - OLIMPIA/SP',
+        # COFCO MERIDIANO
+        'COFCO - MERIDIANO/SP': 'COFCO MERIDIANO',
+        'COFCO MERIDIANO': 'COFCO MERIDIANO',
+        'COFCO MERIDIANO/SP': 'COFCO MERIDIANO',
         
-        # SAFRA ALFENAS/MG
-        'SAFRA': 'SAFRA ALFENAS/MG',
-        'SAFRA ALFENAS': 'SAFRA ALFENAS/MG',
-        'SAFRA ALFENAS/MG': 'SAFRA ALFENAS/MG',
-        'SAFRA IND ALFENAS': 'SAFRA ALFENAS/MG',
-        'SAFRA IND. ALFENAS': 'SAFRA ALFENAS/MG',
-        'SAFRA IND. FERLT/ALFENAS': 'SAFRA ALFENAS/MG',
-        'SAFRA IND. FERTL ALFENAS/MG': 'SAFRA ALFENAS/MG',
-        'SAFRA IND. FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
-        'SAFRA IND.FERTL/ALFENAS': 'SAFRA ALFENAS/MG',
+        # COFCO POTIRENDABA
+        'COFCO - POTIRENDABA': 'COFCO POTIRENDABA',
+        'COFCO - POTIRENDABA/SP': 'COFCO POTIRENDABA',
+        'COFCO POTIRENDA/SP': 'COFCO POTIRENDABA',
+        'COFCO POTIRENDABA': 'COFCO POTIRENDABA',
+        'COFCO POTIRENDABA/SP': 'COFCO POTIRENDABA',
+        'COFCO/POTIRENDABA/SP': 'COFCO POTIRENDABA',
         
-        # USINA SAO MANOEL/SP (padronizado)
-        'USINA SAO MANOEL /SP': 'USINA SAO MANOEL/SP',
-        'USINA SAO MANOEL/SP': 'USINA SAO MANOEL/SP',
-        'USINA SÃO MANOEL /SP': 'USINA SAO MANOEL/SP',
-        'USINA SÃO MANOEL/SP': 'USINA SAO MANOEL/SP',
-        'USINA SAO MANUEL/SP': 'USINA SAO MANOEL/SP',
-        'USINA SÃO MANUEL/SP': 'USINA SAO MANOEL/SP',
+        # COFCO SEBASTIANÓPOLIS
+        'COFCO - SEBASTIANOPOLIS': 'COFCO SEBASTIANÓPOLIS',
+        'COFCO - SEBASTIANOPOLIS/SP': 'COFCO SEBASTIANÓPOLIS',
+        'COFCO - SEBASTIANÓPOLIS/SP': 'COFCO SEBASTIANÓPOLIS',
+        'COFCO - SEBASTIANPOLIS/SP': 'COFCO SEBASTIANÓPOLIS',
+        'COFCO SEBASTIANOPOLIS': 'COFCO SEBASTIANÓPOLIS',
+        'COFCO SEBASTIANÓPOLIS/SP': 'COFCO SEBASTIANÓPOLIS',
         
-        # Nomes corretos que já estão padronizados
-        'BONFINOPOLIS/MG': 'BONFINOPOLIS/MG',
-        'CAFE BRASIL/MG': 'CAFE BRASIL/MG',
-        'COFCO - CATANDUVA/SP': 'COFCO - CATANDUVA/SP',
-        'COFCO - MERIDIANO/SP': 'COFCO - MERIDIANO/SP',
-        'COFCO - POTIRENDABA/SP': 'COFCO - POTIRENDABA/SP',
-        'FERTIBOM/CATANDUVA': 'FERTIBOM/CATANDUVA',
-        'ICL UBERLANDIA/MG': 'ICL UBERLANDIA/MG',
+        # EMBRAFOS BARRETOS
+        'EMBRAFOS BARRETOS': 'EMBRAFOS BARRETOS',
+        
+        # EQUILIBRIO ITAPETININGA
+        'EQUILIBRIO ITAPETININGA/SP': 'EQUILIBRIO ITAPETININGA',
+        'EQUILIBRIO ITAPETININGA04': 'EQUILIBRIO ITAPETININGA',
+        
+        # FASS NOVA INDEPENDÊNCIA
+        'FASS - NOVA INDEPENDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS - NOVA INDEPENDENCIA/SP': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS INDEPENDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS N.INDEPENDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA IND.': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPEDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPENDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPENDÊNCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPÊNDENCIA': 'FASS NOVA INDEPENDÊNCIA',
+        'FASS NOVA INDEPENDENCIA/SP': 'FASS NOVA INDEPENDÊNCIA',
+        
+        # FASS SERTÃOZINHO
+        'FAAS - SERTAOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS - SERTAOZINHO': 'FASS SERTÃOZINHO',
+        'FASS - SERTAOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS - SERTÃOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS SERTAOZINHO': 'FASS SERTÃOZINHO',
+        'FASS SERTÃOZINHO': 'FASS SERTÃOZINHO',
+        'FASS SERTAOZINHO SP': 'FASS SERTÃOZINHO',
+        'FASS SERTAOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS- SERTAOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS SERTÃOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS- SERTÃOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS-SERTAOZINHO/SP': 'FASS SERTÃOZINHO',
+        'FASS-SERTÃOZINHO/SP': 'FASS SERTÃOZINHO',
+        
+        # FERTI SOLO INSUMOS
+        'FERTI SOLO INSUMOS AGRICO': 'FERTI SOLO INSUMOS',
+        'FERTI SOLO INSUMOS AGRICO/PR': 'FERTI SOLO INSUMOS',
+        
+        # FERTIBOM CATANDUVA
+        'FERTIBOM - CATANDUVA': 'FERTIBOM CATANDUVA',
+        'FERTIBOM - CATANDUVA/SP': 'FERTIBOM CATANDUVA',
+        'FERTIBOM CATANDUVA': 'FERTIBOM CATANDUVA',
+        'FERTIBOM/ CATANDUVA': 'FERTIBOM CATANDUVA',
+        'FERTIBOM/CATANDUVA': 'FERTIBOM CATANDUVA',
+        
+        # IC ARAUCARIA
+        'IC ARAUCARIA': 'IC ARAUCARIA',
+        
+        # ICL JACAREÍ
+        'ICL - JACAREI/SP': 'ICL JACAREÍ',
+        'ICL - JACAREI/SP - 0013/56': 'ICL JACAREÍ',
+        'ICL - JACAREÍ/SP - 0013/56': 'ICL JACAREÍ',
+        'ICL JACAREI': 'ICL JACAREÍ',
+        'ICL JACAREI 0008/99': 'ICL JACAREÍ',
+        'ICL JACAREI- 0008/99': 'ICL JACAREÍ',
+        'ICL JACAREI 0013/56': 'ICL JACAREÍ',
+        'ICL JACAREI 0013-56 /SP': 'ICL JACAREÍ',
+        'ICL JACAREI/SP': 'ICL JACAREÍ',
+        'ICL JACAREÍ/SP': 'ICL JACAREÍ',
+        'ICL JACAREI/SP - 00008/99': 'ICL JACAREÍ',
+        'ICL JACAREI/SP - 0008/99': 'ICL JACAREÍ',
+        'ICL JACAREI/SP - 0008-99': 'ICL JACAREÍ',
+        'ICL JACAREI/SP - 0013/56': 'ICL JACAREÍ',
+        'ICL JACAREÍ/SP - 0013/56': 'ICL JACAREÍ',
+        'ICL JACAREI/SP 0008/99': 'ICL JACAREÍ',
+        'ICL JACAREI/SP -0013/56': 'ICL JACAREÍ',
+        
+        # ICL UBERLÂNDIA
+        'ICL UBERLANDIA': 'ICL UBERLÂNDIA',
+        'ICL UBERLANDIA/MG': 'ICL UBERLÂNDIA',
+        'ICL UBERLANDIA/SP': 'ICL UBERLÂNDIA',
+        
+        # KALIUM
         'KALIUM': 'KALIUM',
-        'TERA FERTILIZANTES/MG': 'TERA FERTILIZANTES/MG',
-        'USINA SANTA ADELIA S/A': 'USINA SANTA ADELIA S/A'
+        
+        # LOYDER OLÍMPIA
+        'LOYDER - OLIMPIA/SP': 'LOYDER OLÍMPIA',
+        'LOYDER OLIMPIA': 'LOYDER OLÍMPIA',
+        'LOYDER OLIMPIA/SP': 'LOYDER OLÍMPIA',
+        'LOYDER- OLIMPIA/SP': 'LOYDER OLÍMPIA',
+        
+        # MAXFOL AGROIND
+        'MAXFOL AGRO.IND/SP': 'MAXFOL AGROIND',
+        
+        # MOSAIC CAJATI
+        'MOSAIC P&K - CAJATI': 'MOSAIC CAJATI',
+        
+        # SAFRA ALFENAS
+        'SAFRA ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA- ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA ALFENAS/MG': 'SAFRA ALFENAS',
+        'SAFRA IND ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND FERT/ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND. ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND. ALFENAS/MG': 'SAFRA ALFENAS',
+        'SAFRA IND. FERLT/ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND. FERT/ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND. FERTL ALFENAS/MG': 'SAFRA ALFENAS',
+        'SAFRA IND. FERTL/ALFENAS': 'SAFRA ALFENAS',
+        'SAFRA IND.FERTL/ALFENAS': 'SAFRA ALFENAS',
+        'SANDRA IND. FERT/ALFENAS': 'SAFRA ALFENAS',
+        
+        # TERA FERTILIZANTES
+        'TERA FERTILIZANTES/MG': 'TERA FERTILIZANTES',
+        'TRA FERTILIZANTES/MG': 'TERA FERTILIZANTES',
+        
+        # USINA SANTA ADÉLIA
+        'USINA SANTA ADELEIA/SP': 'USINA SANTA ADÉLIA',
+        'USINA SANTA ADELIA S/A': 'USINA SANTA ADÉLIA',
+        
+        # USINA SÃO MANOEL
+        'USINA SÃO MANOEL /SP': 'USINA SÃO MANOEL',
+        'USINA SÃO MANOEL/SP': 'USINA SÃO MANOEL',
+        'USINA SAO MANUEL': 'USINA SÃO MANOEL',
+        'USINA SAO MANUEL/SP': 'USINA SÃO MANOEL',
+        'USINA SÃO MANUEL/SP': 'USINA SÃO MANOEL',
     }
     
-    # Buscar correspondência exata no mapeamento
-    if nome_limpo in mapeamento_clientes_venda:
-        return mapeamento_clientes_venda[nome_limpo]
-    
-    # Se não encontrou correspondência, retorna o nome original limpo
-    return nome_limpo
-
+    # Aplicar mapeamento
+    return mapeamento_clientes_venda.get(nome_limpo, nome_limpo)
 def main():
     st.title("Trocas de Nota Terloc Sólidos")
     
@@ -228,6 +308,8 @@ def main():
     if df is None:
         st.error("Erro ao carregar dados")
         return
+    
+
     
     # ═══════════════════════════════════════════════════════════════════════════════════
     # 📤 SEÇÃO DE UPLOAD HÍBRIDO - TEMPORARIAMENTE OCULTA
@@ -924,17 +1006,61 @@ def main():
         data_base = "20/10/2025"
     
     # CALCULAR MÉDIAS REAIS das etapas com nomes exatos
-    def calcular_tempo_medio(df, col_data, col_hora1, col_hora2):
-        """Calcula tempo médio entre duas etapas no formato h:mm:ss"""
+    def calcular_tempo_medio(df, col_data1, col_hora1, col_hora2, col_data2=None):
+        """Calcula tempo médio entre duas etapas no formato h:mm:ss
+        
+        Parâmetros:
+        - col_data1: coluna de data para o primeiro horário
+        - col_hora1: primeira hora
+        - col_hora2: segunda hora
+        - col_data2: coluna de data para o segundo horário (opcional, usa col_data1 se não fornecida)
+        """
         try:
-            if col_data in df.columns and col_hora1 in df.columns and col_hora2 in df.columns:
-                # Combinar data e hora
-                datetime1 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora1].astype(str), errors='coerce')
-                datetime2 = pd.to_datetime(df[col_data].astype(str) + ' ' + df[col_hora2].astype(str), errors='coerce')
+            # Se col_data2 não for fornecida, usar a mesma data para ambos os horários
+            if col_data2 is None:
+                col_data2 = col_data1
+            
+            if col_data1 in df.columns and col_data2 in df.columns and col_hora1 in df.columns and col_hora2 in df.columns:
+                # Filtrar apenas linhas com valores válidos (não nulos e não vazios)
+                mask_valido = (
+                    df[col_data1].notna() & 
+                    df[col_data2].notna() & 
+                    df[col_hora1].notna() & 
+                    df[col_hora2].notna() &
+                    (df[col_data1] != '') &
+                    (df[col_data2] != '') &
+                    (df[col_hora1] != '') &
+                    (df[col_hora2] != '')
+                )
+                
+                df_valido = df[mask_valido].copy()
+                
+                if len(df_valido) == 0:
+                    return "0:00:00"
+                
+                # Combinar data e hora para criar datetime
+                datetime1 = pd.to_datetime(df_valido[col_data1].astype(str) + ' ' + df_valido[col_hora1].astype(str), errors='coerce')
+                datetime2 = pd.to_datetime(df_valido[col_data2].astype(str) + ' ' + df_valido[col_hora2].astype(str), errors='coerce')
                 
                 # Calcular diferença em segundos
                 diferenca = (datetime2 - datetime1).dt.total_seconds()
-                diferenca_valida = diferenca[diferenca.notna() & (diferenca >= 0) & (diferenca < 24*3600)]
+                
+                # LÓGICA DE NEGÓCIO adaptada para diferentes casos
+                mask_tempo_razoavel = diferenca.notna()
+                diferenca_filtrada = diferenca[mask_tempo_razoavel].copy()
+                
+                # Para Gate → NF Venda (que pode span dias), usar limite maior
+                if col_hora1 == 'HORA GATE ' and col_hora2 == 'HORA RECEBIMENTO NF DE VENDA':
+                    # Filtrar apenas tempos positivos e razoáveis (0 a 72 horas = 3 dias máximo)
+                    diferenca_valida = diferenca_filtrada[(diferenca_filtrada >= 0) & (diferenca_filtrada <= 72*3600)]
+                else:
+                    # Para outros intervalos, usar lógica anterior
+                    # Corrigir casos de meia-noite: se negativo entre -2h e 0, adicionar 24h
+                    mask_meia_noite = (diferenca_filtrada >= -2*3600) & (diferenca_filtrada < 0)
+                    diferenca_filtrada.loc[mask_meia_noite] = diferenca_filtrada.loc[mask_meia_noite] + 24*3600
+                    
+                    # Filtrar apenas tempos lógicos: 0 a 6 horas (processo normal)
+                    diferenca_valida = diferenca_filtrada[(diferenca_filtrada >= 0) & (diferenca_filtrada <= 6*3600)]
                 
                 if len(diferenca_valida) > 0:
                     media_segundos = diferenca_valida.mean()
@@ -944,18 +1070,17 @@ def main():
                     return f"{horas}:{minutos:02d}:{segundos:02d}"
                         
             return "0:00:00"
-        except Exception:
+        except Exception as e:
             return "0:00:00"
     
-    # Calcular intervalos médios com nomes exatos das colunas
-    intervalo1 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA TICKET', 'HORARIO SENHA ')  # Entrada → Senha
-    intervalo2 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORARIO SENHA ', 'HORA GATE ')   # Senha → Gate  
-    intervalo3 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA GATE ', 'HORARIO DE LIBERAÇÃO')  # Gate → Liberação
+    # Informações discretas sobre os dados
+    st.sidebar.caption(f"� {len(df):,} registros carregados")
+    st.sidebar.caption(f"📅 Período: {df['DATA'].min().strftime('%d/%m/%Y') if 'DATA' in df.columns else 'N/A'} a {df['DATA'].max().strftime('%d/%m/%Y') if 'DATA' in df.columns else 'N/A'}")
     
-    # Calcular novos intervalos para as 5 etapas
-    intervalo1 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA TICKET', 'HORARIO SENHA ')      # Ticket → Senha
-    intervalo2 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORARIO SENHA ', 'HORA GATE ')       # Senha → Gate
-    intervalo3 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA GATE ', 'HORA RECEBIMENTO NF DE VENDA')  # Gate → NF Venda
+    # Calcular intervalos das 5 etapas com nomes CORRETOS das colunas (com espaços exatos!)
+    intervalo1 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA TICKET', 'HORARIO SENHA ')       # Ticket → Senha
+    intervalo2 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORARIO SENHA ', 'HORA GATE ')        # Senha → Gate
+    intervalo3 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA GATE ', 'HORA RECEBIMENTO NF DE VENDA', 'DATA DE LIBERAÇÃO')  # Gate → NF Venda
     intervalo4 = calcular_tempo_medio(df, 'DATA  TICKET', 'HORA RECEBIMENTO NF DE VENDA', 'HORARIO DE LIBERAÇÃO')  # NF Venda → Liberação
     
     # 5 etapas do processo sem horários
